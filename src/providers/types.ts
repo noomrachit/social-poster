@@ -1,0 +1,29 @@
+// Interface ที่ทุก provider (youtube, facebook, tiktok, ...) ต้องทำตาม
+// แต่ละ provider รับผิดชอบ: OAuth flow ของตัวเอง + การโพสต์ไปยังแพลตฟอร์มของตัวเอง
+
+export interface IntegrationRow {
+  id: string;
+  platform: string;
+  display_name: string;
+  external_account_id: string;
+  access_token_enc: string;
+  refresh_token_enc: string | null;
+  token_expires_at: string | null;
+}
+
+export interface PublishInput {
+  content: string;
+  mediaUrls: string[];
+}
+
+export interface PublishResult {
+  status: "success" | "error";
+  remotePostId?: string;
+  errorMessage?: string;
+}
+
+export interface SocialProvider {
+  platform: string;
+  /** ยิงโพสต์ไปยังแพลตฟอร์มนี้ ด้วย integration ที่เชื่อมไว้แล้ว 1 บัญชี */
+  publish(integration: IntegrationRow, input: PublishInput): Promise<PublishResult>;
+}
