@@ -11,3 +11,17 @@ integrationsRouter.get("/integrations", async (_req, res) => {
   );
   res.json(rows);
 });
+
+// ยกเลิกการเชื่อมบัญชี (ลบ integration ทิ้ง — post_results เก่าที่อ้างถึงจะถูกลบตามด้วย ON DELETE CASCADE)
+integrationsRouter.delete("/integrations/:id", async (req, res) => {
+  const { rows } = await pool.query(
+    `DELETE FROM integrations WHERE id = $1 RETURNING id, platform, display_name`,
+    [req.params.id]
+  );
+  const deleted = rows[0];
+  if (!deleted) {
+    res.status(404).json({ error: "ไม่พบบัญชีที่เชื่อมไว้ตาม id นี้" });
+    return;
+  }
+  res.json({ deleted });
+});

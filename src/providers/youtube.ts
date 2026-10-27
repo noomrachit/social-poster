@@ -1,6 +1,7 @@
 import { google } from "googleapis";
 import { createGoogleOAuthClient } from "../lib/google-oauth.js";
-import { decryptToken } from "../lib/crypto.js";
+import { decryptToken, encryptToken } from "../lib/crypto.js";
+import { pool } from "../db/pool.js";
 import type { IntegrationRow, PublishInput, PublishResult, SocialProvider } from "./types.js";
 
 /**
@@ -23,6 +24,30 @@ export const youtubeProvider: SocialProvider = {
       auth.setCredentials({
         access_token: decryptToken(integration.access_token_enc),
         refresh_token: integration.refresh_token_enc ? decryptToken(integration.refresh_token_enc) : undefined,
+      });
+
+      // googleapis รีเฟรช access_token ให้อัตโนมัติเมื่อหมดอายุ (ใช้ refresh_token) แต่ของใหม่
+      // จะอยู่แค่ใน memory เฉยๆ ถ้าไม่เก็บกลับ DB ครั้งหน้าจะต้องรีเฟรชซ้ำทุกครั้งที่โพสต์โดยไม่จำเป็น
+      auth.on("tokens", (tokens) => {
+        if (!tokens.access_token) return;
+        void pool
+          .query(
+            `UPDATE integrations
+             SET access_token_enc = $1,
+                 refresh_token_enc = COALESCE($2, refresh_token_enc),
+                 token_expires_at = $3,
+                 updated_at = now()
+             WHERE id = $4`,
+            [
+              encryptToken(tokens.access_token),
+              tokens.refresh_token ? encryptToken(tokens.refresh_token) : null,
+              tokens.expiry_date ? new Date(tokens.expiry_date) : null,
+              integration.id,
+            ]
+          )
+          .catch((err) => {
+            console.error(`บันทึก YouTube token ที่รีเฟรชใหม่ลง DB ไม่สำเร็จ (integration ${integration.id}):`, err);
+          });
       });
 
       const youtube = google.youtube({ version: "v3", auth });
