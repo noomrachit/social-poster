@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>social-poster</title>
+  <style>
+    :root { --bg:#f6f7f9; --card:#fff; --text:#1d232b; --muted:#66707d; --line:#dfe3e8; --accent:#2563eb; --ok:#15803d; --bad:#b91c1c; --warn:#a16207; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg:#121417; --card:#1b1f24; --text:#e8ebef; --muted:#9aa3ad; --line:#2c323a; --accent:#60a5fa; --ok:#4ade80; --bad:#f87171; --warn:#facc15; }
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui, -apple-system, "Sarabun", "Noto Sans Thai", sans-serif; background:var(--bg); color:var(--text); }
+    main { max-width: 720px; margin: 0 auto; padding: 16px; }
+    h1 { font-size: 1.25rem; margin: 8px 0 16px; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:16px; }
+    label { display:block; font-size:.9rem; color:var(--muted); margin: 10px 0 4px; }
+    textarea, input[type=text], input[type=password] { width:100%; padding:10px; font:inherit; color:var(--text); background:var(--bg); border:1px solid var(--line); border-radius:8px; }
+    textarea { min-height: 110px; resize: vertical; }
+    button { font:inherit; padding:10px 14px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--text); cursor:pointer; }
+    button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+    button.danger { color:var(--bad); }
+    button:disabled { opacity:.5; cursor:default; }
+    .tabs { display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap; }
+    .tabs button.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+    .row { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--line); }
+    .row:last-child { border-bottom:none; }
+    .grow { flex:1; min-width:0; }
+    .muted { color:var(--muted); font-size:.85rem; }
+    .badge { display:inline-block; font-size:.8rem; padding:2px 8px; border-radius:999px; border:1px solid currentColor; margin-right:6px; }
+    .success { color:var(--ok); }
+    .error { color:var(--bad); }
+    .pending { color:var(--warn); }
+    .msg { font-size:.9rem; margin-top:10px; word-break: break-word; }
+    .hidden { display:none; }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+<main>
+  <h1>social-poster</h1>
+
+  <div class="card" id="auth-card">
+    <label for="token">Admin token</label>
+    <div style="display:flex; gap:8px;">
+      <input type="password" id="token" autocomplete="off" placeholder="ใส่ ADMIN_TOKEN">
+      <button id="save-token" class="primary">ใช้ token นี้</button>
+    </div>
+    <div class="muted" style="margin-top:8px;">เก็บไว้เฉพาะแท็บนี้ (sessionStorage) ปิดแท็บแล้วต้องใส่ใหม่</div>
+    <div class="msg" id="auth-msg"></div>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button data-tab="post" class="active">โพสต์</button>
+    <button data-tab="accounts">บัญชี</button>
+    <button data-tab="history">ประวัติ</button>
+  </div>
+
+  <section id="tab-post" class="card">
+    <label for="content">ข้อความ (บรรทัดแรกคือชื่อวิดีโอ เมื่อโพสต์ไป YouTube)</label>
+    <textarea id="content" placeholder="เขียนข้อความที่ต้องการโพสต์"></textarea>
+
+    <label for="media">ลิงก์ไฟล์ (ไม่บังคับ ใส่ได้บรรทัดละ 1 ลิงก์ — YouTube รองรับเฉพาะวิดีโอ)</label>
+    <textarea id="media" style="min-height:60px" placeholder="https://example.com/video.mp4"></textarea>
+
+    <label>ปลายทาง (ไม่เลือก = ทุกบัญชี)</label>
+    <div id="target-list"><div class="muted">กำลังโหลดบัญชี...</div></div>
+
+    <div style="margin-top:14px;">
+      <button id="send" class="primary">โพสต์</button>
+    </div>
+    <div class="msg" id="post-msg"></div>
+  </section>
+
+  <section id="tab-accounts" class="card hidden">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+      <strong>บัญชีที่เชื่อมไว้</strong>
+      <a href="/auth/youtube/start" target="_blank" rel="noopener">+ เชื่อม YouTube</a>
+    </div>
+    <div id="account-list"></div>
+    <div class="msg" id="accounts-msg"></div>
+  </section>
+
+  <section id="tab-history" class="card hidden">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+      <strong>ประวัติโพสต์ล่าสุด</strong>
+      <button id="reload-history">รีเฟรช</button>
+    </div>
+    <div id="history-list"></div>
+  </section>
+</main>
+
+<script>
+(function () {
+  var KEY = "social-poster-admin-token";
+  var $ = function (id) { return document.getElementById(id); };
+
+  function getToken() {
+    try { return sessionStorage.getItem(KEY) || ""; } catch (e) { return ""; }
+  }
+  function setToken(t) {
+    try { sessionStorage.setItem(KEY, t); } catch (e) {}
+  }
+
+  function api(path, opts) {
+    opts = opts || {};
+    var headers = { "x-admin-token": getToken() };
+    if (opts.body) headers["Content-Type"] = "application/json";
+    return fetch(path, { method: opts.method || "GET", headers: headers, body: opts.body ? JSON.stringify(opts.body) : undefined })
+      .then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (data) {
+          if (!res.ok) throw new Error(data.error || ("HTTP " + res.status));
+          return data;
+        });
+      });
+  }
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+
+  var PLATFORM_NAMES = { youtube: "YouTube", facebook: "Facebook", tiktok: "TikTok" };
+  function platformName(p) { return PLATFORM_NAMES[p] || p; }
+
+  var STATUS_TEXT = { success: "สำเร็จ", error: "ล้มเหลว", pending: "รอผล" };
+  function statusBadge(status) {
+    var cls = status === "success" ? "success" : status === "error" ? "error" : "pending";
+    return el("span", "badge " + cls, STATUS_TEXT[status] || status);
+  }
+
+  // ---------- tabs ----------
+  var tabButtons = document.querySelectorAll("#tabs button");
+  function showTab(name) {
+    tabButtons.forEach(function (b) { b.classList.toggle("active", b.dataset.tab === name); });
+    ["post", "accounts", "history"].forEach(function (t) {
+      $("tab-" + t).classList.toggle("hidden", t !== name);
+    });
+    if (name === "accounts") loadAccounts();
+    if (name === "history") loadHistory();
+    if (name === "post") loadTargets();
+  }
+  tabButtons.forEach(function (b) {
+    b.addEventListener("click", function () { showTab(b.dataset.tab); });
+  });
+
+  // ---------- auth ----------
+  $("token").value = getToken();
+  $("save-token").addEventListener("click", function () {
+    var t = $("token").value.trim();
+    setToken(t);
+    $("auth-msg").textContent = t ? "บันทึก token แล้ว กำลังตรวจสอบ..." : "ล้าง token แล้ว";
+    loadTargets();
+    api("/integrations").then(function () {
+      $("auth-msg").textContent = "token ใช้ได้";
+      $("auth-msg").className = "msg success";
+    }).catch(function (e) {
+      $("auth-msg").textContent = "ใช้ไม่ได้: " + e.message;
+      $("auth-msg").className = "msg error";
+    });
+  });
+
+  // ---------- post tab ----------
+  var integrationsCache = [];
+  function loadTargets() {
+    var box = $("target-list");
+    box.textContent = "กำลังโหลดบัญชี...";
+    api("/integrations").then(function (rows) {
+      integrationsCache = rows;
+      box.textContent = "";
+      if (rows.length === 0) {
+        box.appendChild(el("div", "muted", "ยังไม่มีบัญชีที่เชื่อมไว้ ไปที่แท็บ บัญชี ก่อน"));
+        return;
+      }
+      rows.forEach(function (r) {
+        var label = el("label", "row");
+        label.style.margin = "0";
+        label.style.color = "inherit";
+        var cb = el("input");
+        cb.type = "checkbox";
+        cb.value = r.id;
+        cb.checked = true;
+        label.appendChild(cb);
+        label.appendChild(el("span", "grow", platformName(r.platform) + " — " + r.display_name));
+        box.appendChild(label);
+      });
+    }).catch(function (e) {
+      box.textContent = "";
+      box.appendChild(el("div", "error", "โหลดบัญชีไม่ได้: " + e.message));
+    });
+  }
+
+  $("send").addEventListener("click", function () {
+    var content = $("content").value.trim();
+    var media = $("media").value.split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
+    var checked = Array.prototype.slice.call(document.querySelectorAll("#target-list input[type=checkbox]:checked")).map(function (c) { return c.value; });
+    var msg = $("post-msg");
+    msg.textContent = "";
+    msg.className = "msg";
+
+    if (!content) { msg.textContent = "กรุณาใส่ข้อความ"; msg.className = "msg error"; return; }
+    if (integrationsCache.length && checked.length === 0) { msg.textContent = "เลือกปลายทางอย่างน้อย 1 บัญชี"; msg.className = "msg error"; return; }
+
+    var body = { content: content, mediaUrls: media };
+    if (integrationsCache.length) body.integrationIds = checked;
+
+    var btn = $("send");
+    btn.disabled = true;
+    msg.textContent = "กำลังโพสต์...";
+    api("/posts", { method: "POST", body: body }).then(function (data) {
+      msg.textContent = "";
+      (data.results || []).forEach(function (r) {
+        var line = el("div", "row");
+        line.appendChild(el("span", "grow", platformName(r.platform)));
+        line.appendChild(statusBadge(r.status));
+        if (r.error) line.appendChild(el("span", "muted", r.error));
+        msg.appendChild(line);
+      });
+      $("content").value = "";
+      $("media").value = "";
+    }).catch(function (e) {
+      msg.textContent = "โพสต์ไม่สำเร็จ: " + e.message;
+      msg.className = "msg error";
+    }).finally(function () { btn.disabled = false; });
+  });
+
+  // ---------- accounts tab ----------
+  function loadAccounts() {
+    var list = $("account-list");
+    var msg = $("accounts-msg");
+    msg.textContent = "";
+    list.textContent = "กำลังโหลด...";
+    api("/integrations").then(function (rows) {
+      list.textContent = "";
+      if (rows.length === 0) { list.appendChild(el("div", "muted", "ยังไม่มีบัญชี")); return; }
+      rows.forEach(function (r) {
+        var row = el("div", "row");
+        var info = el("div", "grow");
+        info.appendChild(el("div", null, r.display_name));
+        info.appendChild(el("div", "muted", platformName(r.platform)));
+        row.appendChild(info);
+        var del = el("button", "danger", "ยกเลิกการเชื่อม");
+        del.addEventListener("click", function () {
+          if (!confirm("ยกเลิกการเชื่อม " + r.display_name + " ?\nประวัติโพสต์ที่ผูกกับบัญชีนี้จะถูกลบด้วย")) return;
+          del.disabled = true;
+          api("/integrations/" + encodeURIComponent(r.id), { method: "DELETE" }).then(function () {
+            loadAccounts();
+          }).catch(function (e) {
+            msg.textContent = "ลบไม่สำเร็จ: " + e.message;
+            msg.className = "msg error";
+            del.disabled = false;
+          });
+        });
+        row.appendChild(del);
+        list.appendChild(row);
+      });
+    }).catch(function (e) {
+      list.textContent = "";
+      msg.textContent = "โหลดไม่สำเร็จ: " + e.message;
+      msg.className = "msg error";
+    });
+  }
+
+  // ---------- history tab ----------
+  function loadHistory() {
+    var list = $("history-list");
+    list.textContent = "กำลังโหลด...";
+    api("/posts").then(function (posts) {
+      list.textContent = "";
+      if (posts.length === 0) { list.appendChild(el("div", "muted", "ยังไม่มีประวัติโพสต์")); return; }
+      posts.forEach(function (p) {
+        var card = el("div", "row");
+        card.style.display = "block";
+        var head = el("div", null, p.content.split("\n")[0].slice(0, 120));
+        head.style.fontWeight = "600";
+        card.appendChild(head);
+        card.appendChild(el("div", "muted", new Date(p.created_at).toLocaleString("th-TH")));
+        (p.results || []).forEach(function (r) {
+          var line = el("div", null);
+          line.style.marginTop = "6px";
+          line.appendChild(el("span", "grow", platformName(r.platform) + "  "));
+          line.appendChild(statusBadge(r.status));
+          if (r.status === "error" && r.error_message) line.appendChild(el("div", "muted", r.error_message));
+          if (r.status === "success" && r.remote_post_id) line.appendChild(el("div", "muted", "id: " + r.remote_post_id));
+          card.appendChild(line);
+        });
+        list.appendChild(card);
+      });
+    }).catch(function (e) {
+      list.textContent = "";
+      list.appendChild(el("div", "error", "โหลดไม่สำเร็จ: " + e.message));
+    });
+  }
+  $("reload-history").addEventListener("click", loadHistory);
+
+  loadTargets();
+})();
+</script>
+</body>
+</html>

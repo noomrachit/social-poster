@@ -3,8 +3,33 @@ import { nanoid } from "nanoid";
 import { pool } from "../db/pool.js";
 import { providers } from "../providers/registry.js";
 import type { IntegrationRow } from "../providers/types.js";
+import { requireAdmin } from "../lib/admin-auth.js";
 
 export const postsRouter = Router();
+postsRouter.use(requireAdmin);
+
+// GET /posts — ประวัติโพสต์ล่าสุด พร้อมผลลัพธ์แยกรายแพลตฟอร์ม
+postsRouter.get("/posts", async (_req, res) => {
+  const { rows: posts } = await pool.query(
+    `SELECT id, content, media_urls, created_at FROM posts ORDER BY created_at DESC LIMIT 50`
+  );
+  if (posts.length === 0) {
+    res.json([]);
+    return;
+  }
+  const { rows: results } = await pool.query(
+    `SELECT post_id, platform, status, remote_post_id, error_message
+     FROM post_results WHERE post_id = ANY($1) ORDER BY created_at`,
+    [posts.map((p) => p.id)]
+  );
+  const byPost = new Map<string, unknown[]>();
+  for (const r of results) {
+    const list = byPost.get(r.post_id) ?? [];
+    list.push(r);
+    byPost.set(r.post_id, list);
+  }
+  res.json(posts.map((p) => ({ ...p, results: byPost.get(p.id) ?? [] })));
+});
 
 interface CreatePostBody {
   content: string;
