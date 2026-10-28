@@ -56,6 +56,15 @@ export const youtubeProvider: SocialProvider = {
       if (!videoResponse.ok || !videoResponse.body) {
         return { status: "error", errorMessage: `ดึงไฟล์วิดีโอไม่ได้: HTTP ${videoResponse.status}` };
       }
+      // YouTube API รับเฉพาะวิดีโอ — ถ้าเป็นรูปหรือข้อความล้วนให้ปฏิเสธชัดเจน ไม่ปล่อยให้ upload พังกลางทาง
+      const contentType = videoResponse.headers.get("content-type") ?? "";
+      if (!contentType.startsWith("video/")) {
+        await videoResponse.body.cancel();
+        return {
+          status: "error",
+          errorMessage: `YouTube รองรับเฉพาะวิดีโอ (ได้รับไฟล์ชนิด ${contentType || "ไม่ทราบ"})`,
+        };
+      }
 
       const lines = input.content.split("\n");
       const title = (lines[0] || "Untitled").slice(0, 100);
