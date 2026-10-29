@@ -15,7 +15,9 @@
     h1 { font-size: 1.25rem; margin: 8px 0 16px; }
     .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:16px; }
     label { display:block; font-size:.9rem; color:var(--muted); margin: 10px 0 4px; }
-    textarea, input[type=text], input[type=password] { width:100%; padding:10px; font:inherit; color:var(--text); background:var(--bg); border:1px solid var(--line); border-radius:8px; }
+    textarea, input[type=text], input[type=password], select { width:100%; padding:10px; font:inherit; color:var(--text); background:var(--bg); border:1px solid var(--line); border-radius:8px; }
+    details.hook-box { border:1px dashed var(--line); border-radius:8px; padding:10px 12px; margin-bottom:14px; }
+    details.hook-box summary { cursor:pointer; font-weight:600; }
     textarea { min-height: 110px; resize: vertical; }
     button { font:inherit; padding:10px 14px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--text); cursor:pointer; }
     button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
@@ -57,6 +59,30 @@
   </div>
 
   <section id="tab-post" class="card">
+    <details class="hook-box">
+      <summary>ตัวช่วยสร้าง Hook (บรรทัดแรกที่ทำให้คนหยุดอ่าน)</summary>
+      <label for="hook-formula">เลือกสูตร</label>
+      <select id="hook-formula"></select>
+      <div class="muted" id="hook-desc" style="margin-top:6px;"></div>
+
+      <label for="hook-topic">หัวข้อโพสต์ (1-2 ประโยค)</label>
+      <input type="text" id="hook-topic" placeholder="เช่น วิธีทำคลิปสั้นด้วย AI ให้ดูเป็นมืออาชีพ">
+
+      <label for="hook-facts">ข้อมูลจริงที่มี (ใส่เฉพาะที่เป็นความจริง ระบบจะไม่แต่งเพิ่ม)</label>
+      <input type="text" id="hook-facts" placeholder="เช่น ทำคลิป 10 ชิ้นใน 1 วัน">
+
+      <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
+        <button id="hook-copy" class="primary">คัดลอก Prompt ไปวางใน Claude</button>
+      </div>
+
+      <label for="hook-pick">วาง Hook ที่ชอบ (จาก Claude) แล้วกดใส่ในข้อความ</label>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="hook-pick" placeholder="วาง Hook ที่เลือกไว้">
+        <button id="hook-insert">ใส่ในข้อความ</button>
+      </div>
+      <div class="msg" id="hook-msg"></div>
+    </details>
+
     <label for="content">ข้อความ (บรรทัดแรกคือชื่อวิดีโอ เมื่อโพสต์ไป YouTube)</label>
     <textarea id="content" placeholder="เขียนข้อความที่ต้องการโพสต์"></textarea>
 
@@ -191,6 +217,76 @@
       box.appendChild(el("div", "error", "โหลดบัญชีไม่ได้: " + e.message));
     });
   }
+
+  // ---------- ตัวช่วยสร้าง Hook (ทำงานฝั่งเบราว์เซอร์ล้วน ไม่เรียก API) ----------
+  var HOOK_FORMULAS = [
+    { name: "ผลลัพธ์เฉพาะเจาะจง", desc: "เปิดด้วยผลลัพธ์ที่คนอยากได้ พร้อมข้อจำกัดที่ทำให้รู้สึกว่าเกี่ยวกับตัวเอง",
+      formula: "ฉันได้ [ผลลัพธ์] ภายใน [ระยะเวลา] โดยไม่ต้อง [สิ่งที่คนไม่ชอบ]", ask: "ต้องใช้ตัวเลขหรือระยะเวลาจริงเท่านั้น" },
+    { name: "ความจริงที่เจ็บ", desc: "พูดสิ่งที่คนสงสัยอยู่ในใจแต่ยังไม่มีใครพูดชัด ๆ",
+      formula: "เหตุผลที่ [ผลลัพธ์ที่อยากได้] ไม่เกิดขึ้น อาจไม่ใช่เพราะ [ข้ออ้างที่คนใช้] แต่คือ [ปัญหาจริง]", ask: "โทนตรงแต่ไม่ว่าคนอ่าน" },
+    { name: "ก่อนจะทำสิ่งนี้", desc: "ขัดจังหวะก่อนตัดสินใจหรือก่อนพลาดแบบที่ใคร ๆ ก็พลาด",
+      formula: "ก่อนที่คุณจะ [การกระทำ] เช็ก [จำนวน] อย่างนี้ก่อน", ask: "ให้เป็นเช็กลิสต์ที่ทำตามได้" },
+    { name: "ฉันคิดผิดมาตลอด", desc: "เริ่มจากความเชื่อเก่าที่เปลี่ยนไปหลังมีประสบการณ์จริง",
+      formula: "ฉันเคยเชื่อว่า [ความเชื่อเก่า] จนกระทั่ง [ประสบการณ์] ฉันถึงรู้ว่า [ความเชื่อใหม่]", ask: "จากเรื่องจริงเท่านั้น ห้ามแต่งเพิ่ม" },
+    { name: "เปิดคำถามค้างไว้", desc: "บอกผลลัพธ์ที่ไม่คาดคิดแต่ยังไม่เฉลยทันที",
+      formula: "[เหตุการณ์ที่ไม่คาดคิด] เกิดขึ้นหลังจากฉันเปลี่ยนแค่ [เรื่องเล็ก ๆ] และมันไม่ใช่ [คำตอบที่ทุกคนเดา]", ask: "ระบุว่าควรเฉลยในบรรทัดที่เท่าไหร่" },
+    { name: "เลิกทำแบบนี้ ทำแบบนี้แทน", desc: "แทนนิสัยเดิมที่ไม่ค่อยได้ผลด้วยทางเลือกที่ดีกว่า",
+      formula: "เลิก [พฤติกรรมเดิม] แล้วลอง [พฤติกรรมที่ดีกว่า] แทน", ask: "พร้อมตัวอย่างก่อน/หลังที่เห็นต่างชัดใน 2 บรรทัด" },
+    { name: "ชาเลนจ์ที่ชัดเจน", desc: "ชวนให้ลองทำสิ่งเล็ก ๆ ที่วัดผลได้ภายในระยะเวลาที่กำหนด",
+      formula: "ใน [ระยะเวลา] ต่อจากนี้ ลอง [การกระทำเฉพาะ] ก่อน [พฤติกรรมปกติ]", ask: "ใช้เวลาไม่เกิน 10 นาทีต่อวัน และบอกว่าให้วัดอะไร" }
+  ];
+
+  var formulaSelect = $("hook-formula");
+  HOOK_FORMULAS.forEach(function (f, i) {
+    var opt = el("option", null, f.name);
+    opt.value = String(i);
+    formulaSelect.appendChild(opt);
+  });
+  function refreshHookDesc() {
+    $("hook-desc").textContent = HOOK_FORMULAS[Number(formulaSelect.value)].desc;
+  }
+  formulaSelect.addEventListener("change", refreshHookDesc);
+  refreshHookDesc();
+
+  function buildHookPrompt() {
+    var f = HOOK_FORMULAS[Number(formulaSelect.value)];
+    var topic = $("hook-topic").value.trim() || "[ใส่หัวข้อโพสต์]";
+    var facts = $("hook-facts").value.trim() || "[ใส่ข้อมูลจริง หรือเว้นว่างถ้าไม่มี]";
+    return [
+      'ใช้สูตร Hook "' + f.name + '":',
+      '"' + f.formula + '"',
+      "",
+      "โพสต์ของฉันเกี่ยวกับ: " + topic,
+      "ข้อมูลจริงที่มี (ห้ามแต่งเพิ่ม): " + facts,
+      "",
+      "เขียนภาษาไทย ธรรมชาติ ไม่เหมือนโฆษณา เขียน Hook 5 แบบ แต่ละแบบไม่เกิน 2 บรรทัด " + f.ask + " แล้วบอกว่าแบบไหนน่าจะหยุดนิ้วได้มากที่สุดและเพราะอะไร"
+    ].join("\n");
+  }
+
+  $("hook-copy").addEventListener("click", function () {
+    var text = buildHookPrompt();
+    var msg = $("hook-msg");
+    function ok() { msg.textContent = "คัดลอกแล้ว นำไปวางใน Claude ได้เลย"; msg.className = "msg success"; }
+    function fail() { msg.textContent = "คัดลอกอัตโนมัติไม่ได้ กรุณาคัดลอก Prompt ด้วยตัวเอง"; msg.className = "msg error"; }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(ok, fail);
+    } else {
+      fail();
+    }
+  });
+
+  $("hook-insert").addEventListener("click", function () {
+    var hook = $("hook-pick").value.trim();
+    var msg = $("hook-msg");
+    if (!hook) { msg.textContent = "วาง Hook ก่อนกดใส่"; msg.className = "msg error"; return; }
+    var content = $("content");
+    var rest = content.value.trim();
+    content.value = rest ? hook + "\n" + rest : hook;
+    $("hook-pick").value = "";
+    msg.textContent = "ใส่ Hook ในข้อความแล้ว";
+    msg.className = "msg success";
+    content.focus();
+  });
 
   $("send").addEventListener("click", function () {
     var content = $("content").value.trim();
