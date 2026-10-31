@@ -2,7 +2,7 @@
 import { nanoid } from "nanoid";
 import { pool } from "../db/pool.js";
 import { providers } from "../providers/registry.js";
-import type { IntegrationRow, PostStats } from "../providers/types.js";
+import type { IntegrationRow, PostStats, PrivacyStatus } from "../providers/types.js";
 
 export async function listIntegrations() {
   const { rows } = await pool.query(
@@ -41,7 +41,8 @@ export interface CreatePostOutcome {
 export async function createPost(
   content: string,
   mediaUrls: string[] = [],
-  integrationIds?: string[]
+  integrationIds?: string[],
+  privacyStatus?: PrivacyStatus
 ): Promise<CreatePostOutcome | null> {
   const filter = integrationIds?.length
     ? { sql: `WHERE id = ANY($1)`, params: [integrationIds] }
@@ -61,7 +62,7 @@ export async function createPost(
     integrations.map(async (integration) => {
       const provider = providers[integration.platform];
       const result = provider
-        ? await provider.publish(integration, { content, mediaUrls })
+        ? await provider.publish(integration, { content, mediaUrls, privacyStatus })
         : { status: "error" as const, errorMessage: `ไม่รู้จักแพลตฟอร์ม ${integration.platform}` };
 
       await pool.query(

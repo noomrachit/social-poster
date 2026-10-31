@@ -99,7 +99,7 @@ export const youtubeProvider: SocialProvider = {
         part: ["snippet", "status"],
         requestBody: {
           snippet: { title, description },
-          status: { privacyStatus: "public" },
+          status: { privacyStatus: input.privacyStatus ?? "private" },
         },
         media: {
           // googleapis เรียก body.pipe() ซึ่งมีเฉพาะ Node stream — ต้องแปลงจาก web ReadableStream ของ fetch ก่อน

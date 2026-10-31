@@ -8,6 +8,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
 import { createPost, getAnalytics, listIntegrations, listPosts } from "./lib/services.js";
+import { PRIVACY_STATUSES } from "./providers/types.js";
 
 function safeEqual(a: string, b: string): boolean {
   const x = Buffer.from(a);
@@ -54,11 +55,15 @@ export function buildMcpServer(): McpServer {
         content: z.string().min(1).describe("ข้อความโพสต์"),
         mediaUrls: z.array(z.string().url()).optional().describe("ลิงก์ไฟล์ (วิดีโอ/รูป)"),
         integrationIds: z.array(z.string()).optional().describe("id บัญชีปลายทาง (ไม่ใส่ = ทุกบัญชี)"),
+        privacyStatus: z
+          .enum(PRIVACY_STATUSES)
+          .optional()
+          .describe("ความเป็นส่วนตัวของวิดีโอ YouTube: private (ค่าเริ่มต้น) | unlisted | public"),
       },
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
     },
-    async ({ content, mediaUrls, integrationIds }) => {
-      const out = await createPost(content, mediaUrls ?? [], integrationIds);
+    async ({ content, mediaUrls, integrationIds, privacyStatus }) => {
+      const out = await createPost(content, mediaUrls ?? [], integrationIds, privacyStatus);
       return out ? json(out) : failure("ไม่มีบัญชีที่เชื่อมไว้ตรงกับที่ขอ (ลอง list_integrations)");
     }
   );
