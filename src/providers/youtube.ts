@@ -1,3 +1,4 @@
+import { Readable } from "node:stream";
 import { google } from "googleapis";
 import { createGoogleOAuthClient } from "../lib/google-oauth.js";
 import { decryptToken, encryptToken } from "../lib/crypto.js";
@@ -101,8 +102,8 @@ export const youtubeProvider: SocialProvider = {
           status: { privacyStatus: "public" },
         },
         media: {
-          // Node's fetch body (a web ReadableStream) works directly with googleapis' media.body
-          body: videoResponse.body as unknown as NodeJS.ReadableStream,
+          // googleapis เรียก body.pipe() ซึ่งมีเฉพาะ Node stream — ต้องแปลงจาก web ReadableStream ของ fetch ก่อน
+          body: Readable.fromWeb(videoResponse.body as import("node:stream/web").ReadableStream),
         },
       });
 
