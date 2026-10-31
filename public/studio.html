@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>สตูดิโอคลิป — social-poster</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@500;600;700;800&display=swap">
+  <style>
+    :root { --bg:#f6f7f9; --card:#fff; --text:#1d232b; --muted:#66707d; --line:#dfe3e8; --accent:#2563eb; --ok:#15803d; --bad:#b91c1c; --warn:#a16207; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg:#121417; --card:#1b1f24; --text:#e8ebef; --muted:#9aa3ad; --line:#2c323a; --accent:#60a5fa; --ok:#4ade80; --bad:#f87171; --warn:#facc15; }
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family: system-ui, -apple-system, "Sarabun", "Noto Sans Thai", sans-serif; background:var(--bg); color:var(--text); }
+    main { max-width: 960px; margin: 0 auto; padding: 16px; }
+    h1 { font-size: 1.25rem; margin: 8px 0 4px; }
+    h2 { font-size: 1rem; margin: 0 0 8px; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:16px; }
+    label { display:block; font-size:.9rem; color:var(--muted); margin: 10px 0 4px; }
+    textarea, input:not([type]), input[type=text], input[type=password], select { width:100%; padding:10px; font:inherit; color:var(--text); background:var(--bg); border:1px solid var(--line); border-radius:8px; }
+    textarea { resize: vertical; }
+    input[type=range] { width:100%; }
+    button { font:inherit; padding:10px 14px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--text); cursor:pointer; min-height:44px; }
+    button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+    button:disabled { opacity:.5; cursor:default; }
+    .seg { display:flex; gap:6px; flex-wrap:wrap; }
+    .seg button.active { background:var(--accent); border-color:var(--accent); color:#fff; }
+    .check { display:flex; align-items:center; gap:10px; margin:10px 0; color:var(--text); font-size:1rem; }
+    .check input { width:20px; height:20px; }
+    .grid { display:grid; gap:16px; grid-template-columns: 1fr; }
+    @media (min-width: 760px) { .grid { grid-template-columns: 270px minmax(0,1fr); align-items:start; } }
+    .stage { width:100%; max-width:270px; margin:0 auto; }
+    canvas, video { display:block; width:100%; height:auto; aspect-ratio:9/16; border:1px solid var(--line); border-radius:12px; background:#10110f; }
+    .scene { border:1px solid var(--line); border-radius:8px; padding:10px; margin-bottom:8px; }
+    .scene input, .scene textarea { margin-top:6px; }
+    .row { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--line); }
+    .row:last-child { border-bottom:none; }
+    .grow { flex:1; min-width:0; }
+    .muted { color:var(--muted); font-size:.85rem; }
+    .badge { display:inline-block; font-size:.8rem; padding:2px 8px; border-radius:999px; border:1px solid currentColor; }
+    .success { color:var(--ok); } .error { color:var(--bad); } .pending { color:var(--warn); }
+    .msg { font-size:.9rem; margin-top:10px; word-break: break-word; }
+    .hidden { display:none; }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+<main>
+  <h1>สตูดิโอคลิป</h1>
+  <div class="muted"><a href="/">← กลับหน้าโพสต์</a> · พิมพ์หัวข้อ ได้คลิปแนวตั้ง 9:16 พร้อมพากย์ แล้วโพสต์ขึ้น YouTube Shorts ได้ในหน้านี้</div>
+
+  <div class="card" id="auth-card" style="margin-top:12px;">
+    <label for="token" style="margin-top:0;">Admin token</label>
+    <div style="display:flex; gap:8px;">
+      <input type="password" id="token" autocomplete="off" placeholder="ใส่ ADMIN_TOKEN">
+      <button id="save-token" class="primary">ใช้ token นี้</button>
+    </div>
+    <div class="muted" style="margin-top:8px;">เก็บไว้เฉพาะแท็บนี้ (sessionStorage) ใช้ร่วมกับหน้าโพสต์</div>
+    <div class="msg" id="auth-msg"></div>
+  </div>
+
+  <section id="view-brief" class="card">
+    <h2>หัวข้อคลิป</h2>
+    <input type="text" id="topic" autocomplete="off" placeholder="เช่น เก็บเงินเดือนละพัน" maxlength="80">
+    <div class="seg" id="examples" style="margin-top:8px;"></div>
+
+    <label for="style">สูตรคลิป</label>
+    <select id="style"></select>
+
+    <label>ความยาว</label>
+    <div class="seg" id="lengths"></div>
+
+    <label class="check"><input type="checkbox" id="use-ai" checked> ให้ Grok เขียนสคริปต์ (ถ้าใช้ไม่ได้จะสลับไปร่างในเครื่อง)</label>
+    <label class="check"><input type="checkbox" id="with-image"> ใส่ภาพฉาก AI (ใช้เครดิตเพิ่ม)</label>
+
+    <button id="create" class="primary">สร้างคลิป</button>
+    <div class="msg" id="brief-msg"></div>
+  </section>
+
+  <section id="view-cut" class="hidden">
+    <div class="grid">
+      <div>
+        <div class="stage"><canvas id="canvas" width="1080" height="1920" aria-label="ตัวอย่างคลิปแนวตั้ง"></canvas></div>
+        <div class="muted" id="clock" style="text-align:center; margin:8px 0;">0:00 / 0:00</div>
+        <div class="seg" id="scene-jump" style="justify-content:center;"></div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px;">
+          <button id="play">เล่นตัวอย่าง</button>
+          <button id="record" class="primary">อัดคลิป</button>
+        </div>
+        <div class="msg" id="stage-msg"></div>
+      </div>
+
+      <div>
+        <div class="card">
+          <button id="back">← แก้หัวข้อ</button>
+          <span class="muted" id="source" style="margin-left:8px;"></span>
+          <div class="msg" id="note"></div>
+          <label for="title">ชื่อคลิป</label>
+          <input type="text" id="title">
+          <label for="description">คำโปรย</label>
+          <textarea id="description" rows="3"></textarea>
+          <label for="hashtags">แฮชแท็ก</label>
+          <input type="text" id="hashtags">
+        </div>
+
+        <div class="card">
+          <h2>ฉากบนคลิป</h2>
+          <div id="scenes"></div>
+        </div>
+
+        <div class="card">
+          <h2>ภาพเคลื่อนไหว</h2>
+          <div class="seg" id="motions"></div>
+          <label for="strength">แรงการเคลื่อน <span id="strength-val"></span></label>
+          <input type="range" id="strength" min="0" max="100" step="1" value="62">
+        </div>
+
+        <div class="card">
+          <h2>เสียงพากย์</h2>
+          <div class="seg" id="voices"></div>
+          <button id="speak" class="primary" style="margin-top:10px;">สร้างเสียงพากย์</button>
+          <div class="muted" id="voice-hint" style="margin-top:8px;"></div>
+        </div>
+
+        <div class="card hidden" id="publish-card">
+          <h2>โพสต์ขึ้น YouTube</h2>
+          <video id="preview" controls playsinline></video>
+          <div class="muted" id="file-info" style="margin-top:6px;"></div>
+          <a id="save-file" class="muted" href="#" download>บันทึกไฟล์ไว้ในเครื่อง</a>
+          <label>ปลายทาง</label>
+          <div id="targets"><div class="muted">กำลังโหลดบัญชี...</div></div>
+          <label for="privacy">การมองเห็น</label>
+          <select id="privacy">
+            <option value="private">ส่วนตัว (private) — ค่าเริ่มต้น</option>
+            <option value="unlisted">ไม่แสดงในรายการ (unlisted)</option>
+            <option value="public">สาธารณะ (public)</option>
+          </select>
+          <button id="publish" class="primary" style="margin-top:12px;">อัปโหลดและโพสต์</button>
+          <div class="msg" id="publish-msg"></div>
+          <div id="publish-results"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+<script type="module" src="/studio/studio.js"></script>
+</body>
+</html>
