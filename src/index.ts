@@ -7,6 +7,7 @@ import { integrationsRouter } from "./routes/integrations.js";
 import { postsRouter } from "./routes/posts.js";
 import { analyticsRouter } from "./routes/analytics.js";
 import { mediaRouter } from "./routes/media.js";
+import { mcpRouter } from "./mcp.js";
 import { requireAdmin } from "./lib/admin-auth.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -23,6 +24,7 @@ app.use(["/integrations", "/posts", "/analytics"], requireAdmin);
 // สาธารณะ: OAuth callback (Google เรียก) และ GET /media/:name (แพลตฟอร์มปลายทางดึงไฟล์) — POST /media ล็อกใน router เอง
 app.use(authRouter);
 app.use(mediaRouter);
+app.use(mcpRouter); // ตรวจสิทธิ์เองใน mcp.ts (Bearer/x-admin-token หรือ MCP_PATH_SECRET)
 app.use(integrationsRouter);
 app.use(postsRouter);
 app.use(analyticsRouter);
