@@ -3,10 +3,9 @@ import { nanoid } from "nanoid";
 import { pool } from "../db/pool.js";
 import { providers } from "../providers/registry.js";
 import type { IntegrationRow } from "../providers/types.js";
-import { requireAdmin } from "../lib/admin-auth.js";
 
+// การล็อก token ทำใน src/index.ts (ครอบเฉพาะ /posts)
 export const postsRouter = Router();
-postsRouter.use(requireAdmin);
 
 // GET /posts — ประวัติโพสต์ล่าสุด พร้อมผลลัพธ์แยกรายแพลตฟอร์ม
 postsRouter.get("/posts", async (_req, res) => {

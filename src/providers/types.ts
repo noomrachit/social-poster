@@ -22,8 +22,16 @@ export interface PublishResult {
   errorMessage?: string;
 }
 
+export interface PostStats {
+  views?: number;
+  likes?: number;
+  comments?: number;
+}
+
 export interface SocialProvider {
   platform: string;
+  /** (ไม่บังคับ) ดึงสถิติของโพสต์ที่โพสต์ไปแล้ว คืน map: remotePostId → สถิติ; id ที่หาไม่เจอไม่ต้องใส่ */
+  getStats?(integration: IntegrationRow, remotePostIds: string[]): Promise<Record<string, PostStats>>;
   /** ยิงโพสต์ไปยังแพลตฟอร์มนี้ ด้วย integration ที่เชื่อมไว้แล้ว 1 บัญชี */
   publish(integration: IntegrationRow, input: PublishInput): Promise<PublishResult>;
 }

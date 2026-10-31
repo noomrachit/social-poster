@@ -1,9 +1,8 @@
 import { Router } from "express";
 import { pool } from "../db/pool.js";
-import { requireAdmin } from "../lib/admin-auth.js";
 
+// การล็อก token ทำใน src/index.ts (ครอบเฉพาะ /integrations) ไม่ใช้ router.use เพราะจะครอบทุกเส้นทางที่ mount ทีหลัง
 export const integrationsRouter = Router();
-integrationsRouter.use(requireAdmin);
 
 // รายการบัญชีที่เชื่อมไว้แล้ว (ไม่คืน token กลับไปเด็ดขาด)
 integrationsRouter.get("/integrations", async (_req, res) => {

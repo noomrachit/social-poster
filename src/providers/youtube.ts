@@ -2,7 +2,40 @@ import { google } from "googleapis";
 import { createGoogleOAuthClient } from "../lib/google-oauth.js";
 import { decryptToken, encryptToken } from "../lib/crypto.js";
 import { pool } from "../db/pool.js";
-import type { IntegrationRow, PublishInput, PublishResult, SocialProvider } from "./types.js";
+import type { IntegrationRow, PostStats, PublishInput, PublishResult, SocialProvider } from "./types.js";
+
+function buildAuth(integration: IntegrationRow) {
+  const auth = createGoogleOAuthClient();
+  auth.setCredentials({
+    access_token: decryptToken(integration.access_token_enc),
+    refresh_token: integration.refresh_token_enc ? decryptToken(integration.refresh_token_enc) : undefined,
+  });
+
+  // googleapis รีเฟรช access_token ให้อัตโนมัติเมื่อหมดอายุ (ใช้ refresh_token) แต่ของใหม่
+  // จะอยู่แค่ใน memory เฉยๆ ถ้าไม่เก็บกลับ DB ครั้งหน้าจะต้องรีเฟรชซ้ำทุกครั้งโดยไม่จำเป็น
+  auth.on("tokens", (tokens) => {
+    if (!tokens.access_token) return;
+    void pool
+      .query(
+        `UPDATE integrations
+         SET access_token_enc = $1,
+             refresh_token_enc = COALESCE($2, refresh_token_enc),
+             token_expires_at = $3,
+             updated_at = now()
+         WHERE id = $4`,
+        [
+          encryptToken(tokens.access_token),
+          tokens.refresh_token ? encryptToken(tokens.refresh_token) : null,
+          tokens.expiry_date ? new Date(tokens.expiry_date) : null,
+          integration.id,
+        ]
+      )
+      .catch((err) => {
+        console.error(`บันทึก YouTube token ที่รีเฟรชใหม่ลง DB ไม่สำเร็จ (integration ${integration.id}):`, err);
+      });
+  });
+  return auth;
+}
 
 /**
  * YouTube ไม่มี "โพสต์ข้อความ" แบบ X/Facebook — การโพสต์ที่นี่คือการอัปโหลดวิดีโอ
@@ -13,6 +46,25 @@ import type { IntegrationRow, PublishInput, PublishResult, SocialProvider } from
 export const youtubeProvider: SocialProvider = {
   platform: "youtube",
 
+  async getStats(integration: IntegrationRow, remotePostIds: string[]): Promise<Record<string, PostStats>> {
+    const out: Record<string, PostStats> = {};
+    if (remotePostIds.length === 0) return out;
+    const youtube = google.youtube({ version: "v3", auth: buildAuth(integration) });
+    // videos.list รับ id ได้ครั้งละ 50 (ต้องมี scope youtube.readonly — ถ้าเชื่อมบัญชีก่อนเพิ่ม scope ให้เชื่อมใหม่)
+    for (let i = 0; i < remotePostIds.length; i += 50) {
+      const res = await youtube.videos.list({ part: ["statistics"], id: remotePostIds.slice(i, i + 50) });
+      for (const v of res.data.items ?? []) {
+        if (!v.id) continue;
+        out[v.id] = {
+          views: Number(v.statistics?.viewCount ?? 0),
+          likes: Number(v.statistics?.likeCount ?? 0),
+          comments: Number(v.statistics?.commentCount ?? 0),
+        };
+      }
+    }
+    return out;
+  },
+
   async publish(integration: IntegrationRow, input: PublishInput): Promise<PublishResult> {
     const videoUrl = input.mediaUrls[0];
     if (!videoUrl) {
@@ -20,35 +72,7 @@ export const youtubeProvider: SocialProvider = {
     }
 
     try {
-      const auth = createGoogleOAuthClient();
-      auth.setCredentials({
-        access_token: decryptToken(integration.access_token_enc),
-        refresh_token: integration.refresh_token_enc ? decryptToken(integration.refresh_token_enc) : undefined,
-      });
-
-      // googleapis รีเฟรช access_token ให้อัตโนมัติเมื่อหมดอายุ (ใช้ refresh_token) แต่ของใหม่
-      // จะอยู่แค่ใน memory เฉยๆ ถ้าไม่เก็บกลับ DB ครั้งหน้าจะต้องรีเฟรชซ้ำทุกครั้งที่โพสต์โดยไม่จำเป็น
-      auth.on("tokens", (tokens) => {
-        if (!tokens.access_token) return;
-        void pool
-          .query(
-            `UPDATE integrations
-             SET access_token_enc = $1,
-                 refresh_token_enc = COALESCE($2, refresh_token_enc),
-                 token_expires_at = $3,
-                 updated_at = now()
-             WHERE id = $4`,
-            [
-              encryptToken(tokens.access_token),
-              tokens.refresh_token ? encryptToken(tokens.refresh_token) : null,
-              tokens.expiry_date ? new Date(tokens.expiry_date) : null,
-              integration.id,
-            ]
-          )
-          .catch((err) => {
-            console.error(`บันทึก YouTube token ที่รีเฟรชใหม่ลง DB ไม่สำเร็จ (integration ${integration.id}):`, err);
-          });
-      });
+      const auth = buildAuth(integration);
 
       const youtube = google.youtube({ version: "v3", auth });
 

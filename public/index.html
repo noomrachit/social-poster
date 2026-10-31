@@ -88,6 +88,10 @@
 
     <label for="media">ลิงก์ไฟล์ (ไม่บังคับ ใส่ได้บรรทัดละ 1 ลิงก์ — YouTube รองรับเฉพาะวิดีโอ)</label>
     <textarea id="media" style="min-height:60px" placeholder="https://example.com/video.mp4"></textarea>
+    <div style="margin-top:6px;">
+      <input type="file" id="media-file" accept="video/*,image/*">
+      <span class="muted" id="upload-status"></span>
+    </div>
 
     <label>ปลายทาง (ไม่เลือก = ทุกบัญชี)</label>
     <div id="target-list"><div class="muted">กำลังโหลดบัญชี...</div></div>
@@ -288,6 +292,29 @@
     content.focus();
   });
 
+  // อัปโหลดไฟล์ดิบไป POST /media แล้วเติม URL ที่ได้ลงช่องลิงก์
+  $("media-file").addEventListener("change", function () {
+    var input = $("media-file");
+    var file = input.files && input.files[0];
+    var status = $("upload-status");
+    if (!file) return;
+    status.textContent = "กำลังอัปโหลด " + file.name + " ...";
+    fetch("/media?name=" + encodeURIComponent(file.name), {
+      method: "POST",
+      headers: { "x-admin-token": getToken(), "Content-Type": file.type || "application/octet-stream" },
+      body: file
+    }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (data) {
+        if (!res.ok) throw new Error(data.error || ("HTTP " + res.status));
+        var m = $("media");
+        m.value = (m.value.trim() ? m.value.trim() + "\n" : "") + data.url;
+        status.textContent = "อัปโหลดแล้ว (" + (data.size / 1024 / 1024).toFixed(1) + " MB)";
+      });
+    }).catch(function (e) {
+      status.textContent = "อัปโหลดไม่สำเร็จ: " + e.message;
+    }).finally(function () { input.value = ""; });
+  });
+
   $("send").addEventListener("click", function () {
     var content = $("content").value.trim();
     var media = $("media").value.split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
@@ -382,6 +409,29 @@
           if (r.status === "success" && r.remote_post_id) line.appendChild(el("div", "muted", "id: " + r.remote_post_id));
           card.appendChild(line);
         });
+        if ((p.results || []).some(function (r) { return r.status === "success" && r.remote_post_id; })) {
+          var statsBox = el("div", "muted");
+          statsBox.style.marginTop = "8px";
+          var statsBtn = el("button", null, "สถิติ");
+          statsBtn.addEventListener("click", function () {
+            statsBtn.disabled = true;
+            statsBox.textContent = "กำลังดึงสถิติ...";
+            api("/analytics?postId=" + encodeURIComponent(p.id)).then(function (items) {
+              statsBox.textContent = "";
+              if (items.length === 0) { statsBox.textContent = "ไม่มีข้อมูล"; return; }
+              items.forEach(function (a) {
+                var t = a.stats
+                  ? "ดู " + (a.stats.views != null ? a.stats.views : "-") + " · ไลก์ " + (a.stats.likes != null ? a.stats.likes : "-") + " · คอมเมนต์ " + (a.stats.comments != null ? a.stats.comments : "-")
+                  : (a.note || "ไม่มีข้อมูล");
+                statsBox.appendChild(el("div", null, platformName(a.platform) + ": " + t));
+              });
+            }).catch(function (e) {
+              statsBox.textContent = "ดึงสถิติไม่สำเร็จ: " + e.message;
+            }).finally(function () { statsBtn.disabled = false; });
+          });
+          card.appendChild(statsBtn);
+          card.appendChild(statsBox);
+        }
         list.appendChild(card);
       });
     }).catch(function (e) {
