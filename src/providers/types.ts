@@ -11,9 +11,14 @@ export interface IntegrationRow {
   token_expires_at: string | null;
 }
 
+export const PRIVACY_STATUSES = ["private", "unlisted", "public"] as const;
+export type PrivacyStatus = (typeof PRIVACY_STATUSES)[number];
+
 export interface PublishInput {
   content: string;
   mediaUrls: string[];
+  /** ใช้กับ YouTube (ค่าเริ่มต้น private ถ้าไม่ระบุ) */
+  privacyStatus?: PrivacyStatus;
 }
 
 export interface PublishResult {

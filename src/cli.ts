@@ -15,8 +15,9 @@ const HELP = `social-poster CLI
   integrations                      ดูบัญชีที่เชื่อมไว้
   integrations delete <id>          ยกเลิกการเชื่อมบัญชี
   upload <ไฟล์>                      อัปโหลดไฟล์ (video/image) คืน URL
-  post "<ข้อความ>" [--media <url|ไฟล์>]... [--to <id,id>]
+  post "<ข้อความ>" [--media <url|ไฟล์>]... [--to <id,id>] [--privacy private|unlisted|public]
                                     โพสต์ (ไฟล์ในเครื่องจะอัปโหลดให้อัตโนมัติ)
+                                    --privacy ใช้กับ YouTube (ค่าเริ่มต้น private)
   history                           ประวัติโพสต์ล่าสุด
   analytics [<postId>]              สถิติโพสต์ (YouTube: views/likes/comments)`;
 
@@ -78,14 +79,20 @@ async function main() {
     }
     case "post": {
       const content = positional.join(" ").trim();
-      if (!content) fail('ใช้: post "<ข้อความ>" [--media <url|ไฟล์>] [--to <id,id>]');
+      if (!content) fail('ใช้: post "<ข้อความ>" [--media <url|ไฟล์>] [--to <id,id>] [--privacy private|unlisted|public]');
       const mediaUrls: string[] = [];
       for (const m of splitList(flags.media)) mediaUrls.push(isUrl(m) ? m : await uploadFile(m));
       const integrationIds = splitList(flags.to);
+      const privacyStatus = flags.privacy?.[0];
       const out = await api("/posts", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ content, mediaUrls, ...(integrationIds.length ? { integrationIds } : {}) }),
+        body: JSON.stringify({
+          content,
+          mediaUrls,
+          ...(integrationIds.length ? { integrationIds } : {}),
+          ...(privacyStatus ? { privacyStatus } : {}),
+        }),
       });
       console.log(`postId: ${out.postId}`);
       for (const r of out.results) console.log(`${r.status === "success" ? "✓" : "✗"} ${r.platform ?? "-"}  ${r.postId ?? r.error ?? ""}`);

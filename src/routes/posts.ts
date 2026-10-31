@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { pool } from "../db/pool.js";
 import { createPost, listPosts } from "../lib/services.js";
+import { PRIVACY_STATUSES, type PrivacyStatus } from "../providers/types.js";
 
 // การล็อก token ทำใน src/index.ts (ครอบเฉพาะ /posts)
 export const postsRouter = Router();
@@ -14,6 +15,7 @@ interface CreatePostBody {
   content: string;
   mediaUrls?: string[];
   integrationIds?: string[]; // ไม่ส่งมา = โพสต์ไปทุกบัญชีที่เชื่อมไว้
+  privacyStatus?: PrivacyStatus; // YouTube: private (ค่าเริ่มต้น) | unlisted | public
 }
 
 // POST /posts — โพสต์ครั้งเดียว ยิงทุกแพลตฟอร์ม (หรือเฉพาะ integrationIds ที่เลือก) แล้วรอผลทุกแพลตฟอร์มก่อนตอบ
@@ -23,7 +25,11 @@ postsRouter.post("/posts", async (req, res) => {
     res.status(400).json({ error: "content is required" });
     return;
   }
-  const outcome = await createPost(body.content, body.mediaUrls ?? [], body.integrationIds);
+  if (body.privacyStatus !== undefined && !PRIVACY_STATUSES.includes(body.privacyStatus)) {
+    res.status(400).json({ error: `privacyStatus must be one of: ${PRIVACY_STATUSES.join(", ")}` });
+    return;
+  }
+  const outcome = await createPost(body.content, body.mediaUrls ?? [], body.integrationIds, body.privacyStatus);
   if (!outcome) {
     res.status(400).json({ error: "ไม่มีบัญชีที่เชื่อมไว้ตรงกับที่ขอ (ดู GET /integrations)" });
     return;
