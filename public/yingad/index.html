@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ลิงก์รวม ช่องสอนเอไอ</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Anuphan:wght@400;500;600&display=swap">
+<style>
+/* Layout: แถบเดียวกลางจอแบบหน้ารวมลิงก์ ลิงก์เด่นหนึ่งอันอยู่บนสุด ตามด้วยลิงก์รอง */
+:root{
+  --bg:#F2F3F8; --surface:#FFFFFF; --fg:#151A2E; --muted:#5B6280;
+  --line:#DCDFEC; --accent:#3346D3; --warm:#D9822B; --warm-ink:#FFFFFF;
+  --display:"Chakra Petch","Anuphan",system-ui,sans-serif;
+  --body:"Anuphan",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0F1222; --surface:#181C31; --fg:#ECEEF8; --muted:#9AA1C0;
+  --line:#2A3050; --accent:#8C9BFF; --warm:#F0A04B; --warm-ink:#1A1206; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1222; --surface:#181C31; --fg:#ECEEF8; --muted:#9AA1C0;
+  --line:#2A3050; --accent:#8C9BFF; --warm:#F0A04B; --warm-ink:#1A1206; color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.6}
+.wrap{max-width:460px;margin:0 auto;padding:40px 16px 48px;display:flex;flex-direction:column;gap:28px}
+header{display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
+.avatar{width:84px;height:84px;border-radius:50%;background:var(--accent);color:var(--surface);
+  display:grid;place-items:center;font-family:var(--display);font-size:30px;font-weight:700}
+h1{font-family:var(--display);font-size:28px;line-height:1.2;margin:0;text-wrap:balance}
+.bio{color:var(--muted);margin:0;max-width:34ch}
+.label{font-size:12px;letter-spacing:.08em;color:var(--muted);margin:0 0 10px;font-weight:600}
+.feature{background:var(--warm);color:var(--warm-ink);border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:12px}
+.feature h2{font-family:var(--display);font-size:22px;margin:0;line-height:1.25}
+.feature p{margin:0}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.btn{flex:1 1 160px;display:flex;align-items:center;justify-content:center;min-height:48px;padding:0 16px;
+  border-radius:12px;font-weight:600;text-decoration:none;font-family:var(--body);font-size:15px;cursor:pointer;border:0}
+.btn-solid{background:var(--warm-ink);color:var(--warm)}
+.btn-ghost{background:transparent;color:var(--warm-ink);border:1.5px solid var(--warm-ink)}
+.list{display:flex;flex-direction:column;gap:10px;margin:0;padding:0;list-style:none}
+.item{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface);
+  border:1px solid var(--line);border-radius:14px;padding:14px 16px;text-decoration:none;color:var(--fg);
+  transition:border-color .15s,transform .15s}
+.item:hover{border-color:var(--accent);transform:translateY(-1px)}
+.item strong{display:block;font-weight:600}
+.item span{color:var(--muted);font-size:14px}
+.item .arrow{color:var(--accent);font-family:var(--display);font-size:20px;flex:none}
+.item.soon{opacity:.6;pointer-events:none}
+.tag{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:2px 10px;color:var(--muted);flex:none}
+a:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.hint-note{font-size:13px;color:var(--muted);margin:8px 0 0}
+footer{color:var(--muted);font-size:13px;text-align:center;border-top:1px solid var(--line);padding-top:18px}
+@media (prefers-reduced-motion:reduce){.item{transition:none}.item:hover{transform:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="avatar" aria-hidden="true">AI</div>
+    <h1>ช่องสอนเอไอ ภาษาไทย</h1>
+    <p class="bio">สอนใช้เครื่องมือเอไอแบบเข้าใจง่าย คลิปใหม่ทุกสัปดาห์ ลิงก์ทุกอย่างที่ใช้ในคลิปอยู่ที่นี่</p>
+  </header>
+
+  <section>
+    <p class="label">เครื่องมือที่ใช้ในคลิป</p>
+    <div class="feature">
+      <h2>ChatPlayground ใช้เอไอหลายตัวในที่เดียว</h2>
+      <p>ถามคำถามเดียว เทียบคำตอบจากหลายโมเดลพร้อมกัน ไม่ต้องสมัครแยกทีละเจ้า</p>
+      <div class="row">
+        <a class="btn btn-solid" href="https://www.chatplayground.ai/?ref=rachitdr" target="_blank" rel="noopener sponsored">ลองใช้ ChatPlayground</a>
+        <button class="btn btn-ghost" id="copy-cp" type="button">คัดลอกลิงก์</button>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <p class="label">ติดตามช่อง</p>
+    <ul class="list">
+      <li><a class="item" href="https://www.youtube.com/watch?v=byz37ziQzg0" target="_blank" rel="noopener"><div><strong>YouTube</strong><span>ดูคลิปล่าสุด</span></div><b class="arrow" aria-hidden="true">→</b></a></li>
+      <li><a class="item" href="https://www.tiktok.com/@pora7307" target="_blank" rel="noopener"><div><strong>TikTok</strong><span>@pora7307 คลิปสั้นเคล็ดลับเอไอ</span></div><b class="arrow" aria-hidden="true">→</b></a></li>
+      <li><a class="item" href="https://www.facebook.com/reel/2203037593925288" target="_blank" rel="noopener"><div><strong>Facebook</strong><span>ดูรีลล่าสุด</span></div><b class="arrow" aria-hidden="true">→</b></a></li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="label">ของที่แนะนำ</p>
+    <ul class="list">
+      <li><a class="item" href="https://th.shp.ee/5m6kyxql?fromSource=copy_link&smtt=0.0.9" target="_blank" rel="noopener sponsored"><div><strong>สินค้าแนะนำ</strong><span>สั่งซื้อได้ที่ Shopee</span></div><b class="arrow" aria-hidden="true">→</b></a></li>
+    </ul>
+  </section>
+
+  <section>
+    <p class="label">ของใช้ประจำวันจากคลิป TikTok</p>
+    <ul class="list">
+      <li><a class="item" href="https://s.shopee.co.th/30oYlWyXqe" target="_blank" rel="noopener sponsored"><div><strong>ทิชชู่ Botare 20 ห่อ</strong><span>360 แผ่นต่อห่อ · ฿198</span></div><b class="arrow" aria-hidden="true">→</b></a></li>
+      <li><a class="item" href="https://s.shopee.co.th/113UONKO3P" target="_blank" rel="noopener sponsored"><div><strong>น้ำยาปรับผ้านุ่ม Hygiene</strong><span>470–480 มล. · ฿57</span></div><b class="arrow" aria-hidden="true">→</b></a></li>
+      <li><a class="item" href="https://s.shopee.co.th/gQdylbHZw" target="_blank" rel="noopener sponsored"><div><strong>ฟองน้ำล้างจาน 3 ชิ้น</strong><span>฿81</span></div><b class="arrow" aria-hidden="true">→</b></a></li>
+      <li><a class="item" href="https://s.shopee.co.th/4qGCwVtUbq" target="_blank" rel="noopener sponsored"><div><strong>น้ำยาซักผ้า Fineline 1 แถม 1</strong><span>1,250 มล. · ฿163</span></div><b class="arrow" aria-hidden="true">→</b></a></li>
+      <li><a class="item" href="https://s.shopee.co.th/60SAKgZsJ9" target="_blank" rel="noopener sponsored"><div><strong>ยาสีฟัน Colgate Optic White</strong><span>Purple 100 กรัม · ฿139</span></div><b class="arrow" aria-hidden="true">→</b></a></li>
+      <li><a class="item" href="https://s.shopee.co.th/6q1HKDAhj9" target="_blank" rel="noopener sponsored"><div><strong>โคมไฟแม่เหล็ก Tangok</strong><span>฿95</span></div><b class="arrow" aria-hidden="true">→</b></a></li>
+      <li><a class="item" href="https://s.shopee.co.th/5fpJvzI3iS" target="_blank" rel="noopener sponsored"><div><strong>กาแฟ Maxim 10 ซอง</strong><span>฿202</span></div><b class="arrow" aria-hidden="true">→</b></a></li>
+    </ul>
+    <p class="hint-note">ราคาตามที่เห็นตอนสร้างลิงก์ อาจเปลี่ยนได้</p>
+  </section>
+
+  <section>
+    <p class="label">อุปกรณ์บนโต๊ะทำงานที่ใช้ทำคลิป</p>
+    <ul class="list">
+      <li><a class="item" href="https://s.shopee.co.th/113RxZPuej" target="_blank" rel="noopener sponsored"><div><strong>หูฟังบลูทูธ</strong><span>ใช้ฟังเสียงตอนตัดต่อ · โค้ด AYL-CVZ-CXK</span></div><b class="arrow" aria-hidden="true">→</b></a></li>
+      <li><a class="item" href="https://s.shopee.co.th/2gBfx3EI2d" target="_blank" rel="noopener sponsored"><div><strong>หัวชาร์จเร็ว</strong><span>ชาร์จมือถือกับแท็บเล็ตพร้อมกัน · โค้ด BHV-YAQ-PHG</span></div><b class="arrow" aria-hidden="true">→</b></a></li>
+      <li><a class="item" href="https://s.shopee.co.th/3B7wYCxb3B" target="_blank" rel="noopener sponsored"><div><strong>ที่จัดเก็บสายไฟ</strong><span>โต๊ะเรียบร้อย ถ่ายคลิปสวย · โค้ด BNM-FSS-YPG</span></div><b class="arrow" aria-hidden="true">→</b></a></li>
+      <li><a class="item" href="https://s.shopee.co.th/4fwkKZSabs" target="_blank" rel="noopener sponsored"><div><strong>นาฬิกาอัจฉริยะ</strong><span>เตือนนัดและนับเวลาทำงาน · โค้ด ADN-BLU-SQY</span></div><b class="arrow" aria-hidden="true">→</b></a></li>
+    </ul>
+  </section>
+
+  <footer>บางลิงก์ในหน้านี้เป็นลิงก์แนะนำ หากซื้อหรือสมัครผ่านลิงก์ ช่องจะได้ค่าคอมมิชชันโดยคุณไม่เสียเงินเพิ่ม</footer>
+</div>
+
+<script>
+document.getElementById('copy-cp').addEventListener('click', function(){
+  var b=this, url='https://www.chatplayground.ai/?ref=rachitdr';
+  function done(t){b.textContent=t;setTimeout(function(){b.textContent='คัดลอกลิงก์'},1800)}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(function(){done('คัดลอกแล้ว')},function(){done(url)});
+  } else done(url);
+});
+</script>
+</body>
+</html>

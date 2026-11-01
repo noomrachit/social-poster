@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>สตูดิโอยิงแอด</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Anuphan:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: แถบเครื่องมือเดียวกลางจอ เรียงตามขั้นทำงาน เลือกสินค้า → แคปชัน → คลิป → คิวโพสต์ → รายได้ */
+:root{
+  --bg:#F2F3F8; --surface:#FFFFFF; --sunk:#E9EBF4; --fg:#151A2E; --muted:#5B6280;
+  --line:#DCDFEC; --accent:#3346D3; --accent-ink:#FFFFFF; --warm:#D9822B; --good:#1F8A5B;
+  --display:"Chakra Petch","Anuphan",system-ui,sans-serif;
+  --body:"Anuphan",system-ui,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0F1222; --surface:#181C31; --sunk:#12162A; --fg:#ECEEF8; --muted:#9AA1C0;
+  --line:#2A3050; --accent:#8C9BFF; --accent-ink:#0F1222; --warm:#F0A04B; --good:#4CC38A; color-scheme:dark}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.6}
+.wrap{max-width:760px;margin:0 auto;padding:28px 16px 64px;display:flex;flex-direction:column;gap:22px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 16px}
+h1{font-family:var(--display);font-size:30px;line-height:1.15;margin:0}
+.sub{color:var(--muted);margin:0}
+header a{color:var(--accent);font-weight:600;text-decoration:none}
+section{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+h2{font-family:var(--display);font-size:20px;margin:0;display:flex;align-items:center;gap:10px}
+h2 .step{font-family:var(--body);font-size:12px;font-weight:600;letter-spacing:.06em;color:var(--accent);border:1px solid var(--line);border-radius:999px;padding:1px 10px}
+.hint{color:var(--muted);font-size:14px;margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1.5px solid var(--line);background:var(--sunk);color:var(--fg);border-radius:999px;padding:8px 14px;font:600 15px var(--body);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.prod-meta{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:14px;color:var(--muted)}
+.prod-meta b{color:var(--fg);font-weight:600}
+.prod-meta a{color:var(--accent);word-break:break-all}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid var(--line);padding-bottom:8px}
+.tab{background:none;border:0;color:var(--muted);font:600 15px var(--body);padding:6px 10px;border-radius:8px;cursor:pointer}
+.tab[aria-selected="true"]{color:var(--fg);background:var(--sunk)}
+textarea,input{width:100%;font:16px/1.55 var(--body);color:var(--fg);background:var(--sunk);border:1px solid var(--line);border-radius:12px;padding:12px}
+textarea{min-height:190px;resize:vertical}
+.row{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 16px;border-radius:12px;font:600 15px var(--body);cursor:pointer;border:1.5px solid var(--line);background:var(--surface);color:var(--fg);text-decoration:none}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.warm{background:var(--warm);border-color:var(--warm);color:#1A1206}
+.btn:disabled{opacity:.5;cursor:default}
+.clip{display:grid;grid-template-columns:minmax(0,240px) minmax(0,1fr);gap:18px;align-items:start}
+@media (max-width:560px){.clip{grid-template-columns:1fr}.clip canvas{max-width:240px;margin:0 auto}}
+canvas{width:100%;aspect-ratio:9/16;border-radius:14px;background:#0F1222;display:block}
+.clip-side{display:flex;flex-direction:column;gap:12px;min-width:0}
+label.field{display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--muted);font-weight:500}
+.status{font-size:14px;color:var(--muted);min-height:1.6em;margin:0}
+.queue{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.day{font:600 13px var(--body);letter-spacing:.06em;color:var(--muted);margin:10px 0 0}
+.task{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--sunk)}
+.task input{width:20px;height:20px;margin-top:3px;flex:none;accent-color:var(--good)}
+.task.done span{color:var(--muted);text-decoration:line-through}
+.meter{height:12px;background:var(--sunk);border:1px solid var(--line);border-radius:999px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--good);width:0;transition:width .4s}
+.big{font-family:var(--display);font-size:28px;font-variant-numeric:tabular-nums}
+.inc-form{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:8px}
+@media (max-width:480px){.inc-form{grid-template-columns:1fr 1fr}.inc-form .btn{grid-column:1/-1}}
+.log{list-style:none;margin:0;padding:0;font-size:14px;font-variant-numeric:tabular-nums}
+.log li{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}
+.log button{background:none;border:0;color:var(--muted);cursor:pointer;font:14px var(--body)}
+details summary{cursor:pointer;font-weight:600;color:var(--accent)}
+details[open] summary{margin-bottom:10px}
+.add-grid{display:grid;gap:8px}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){.meter i{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>สตูดิโอยิงแอด</h1>
+      <p class="sub">เลือกสินค้า ได้แคปชันกับคลิปพร้อมโพสต์ คุณแค่กดโพสต์เอง</p>
+    </div>
+    <a href="../" target="_blank" rel="noopener">เปิดหน้ารวมลิงก์ →</a>
+  </header>
+
+  <section aria-labelledby="s1">
+    <h2 id="s1"><span class="step">ขั้น 1</span>เลือกสินค้า</h2>
+    <div class="chips" id="chips" role="group" aria-label="สินค้า"></div>
+    <div class="prod-meta" id="meta"></div>
+    <details>
+      <summary>เพิ่มสินค้าใหม่</summary>
+      <div class="add-grid">
+        <input id="np-name" placeholder="ชื่อสินค้า เช่น ไมค์หนีบปก">
+        <input id="np-link" placeholder="ลิงก์ค่าคอมจาก Shopee Affiliate">
+        <input id="np-code" placeholder="โค้ดสินค้า (ถ้ามี)">
+        <textarea id="np-benefits" style="min-height:96px" placeholder="จุดเด่น บรรทัดละ 1 ข้อ (3 ข้อ)"></textarea>
+        <div class="row"><button class="btn primary" id="np-add" type="button">เพิ่มสินค้า</button></div>
+        <p class="hint">สินค้าที่เพิ่มจะจำไว้ในเบราว์เซอร์นี้เท่านั้น</p>
+      </div>
+    </details>
+  </section>
+
+  <section aria-labelledby="s2">
+    <h2 id="s2"><span class="step">ขั้น 2</span>แคปชัน</h2>
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <textarea id="caption" aria-label="แคปชัน"></textarea>
+    <div class="row">
+      <button class="btn primary" id="copy" type="button">คัดลอกแคปชัน</button>
+      <button class="btn" id="shuffle" type="button">เปลี่ยนประโยคเปิด</button>
+    </div>
+    <p class="hint">แก้ข้อความในช่องได้ก่อนคัดลอก ทุกแคปชันมีบรรทัดแจ้งว่าเป็นลิงก์แนะนำ</p>
+  </section>
+
+  <section aria-labelledby="s3">
+    <h2 id="s3"><span class="step">ขั้น 3</span>คลิปแนวตั้ง 15 วินาที</h2>
+    <div class="clip">
+      <canvas id="cv" width="1080" height="1920" aria-label="ตัวอย่างคลิป"></canvas>
+      <div class="clip-side">
+        <label class="field">รูปสินค้า (ไม่บังคับ แต่ช่วยให้คนกดมากขึ้น)
+          <input type="file" id="photo" accept="image/*">
+        </label>
+        <div class="row">
+          <button class="btn" id="play" type="button">เล่นตัวอย่าง</button>
+          <button class="btn warm" id="rec" type="button">สร้างไฟล์คลิป</button>
+        </div>
+        <p class="status" id="status"></p>
+        <p class="hint">คลิปไม่มีเสียง ให้เลือกเพลงในแอปตอนโพสต์ ใช้เวลาสร้าง 15 วินาที ระหว่างนั้นอย่าสลับแท็บ</p>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="s4">
+    <h2 id="s4"><span class="step">ขั้น 4</span>คิวโพสต์ 3 วัน</h2>
+    <div id="queue"></div>
+    <div class="row"><button class="btn" id="q-reset" type="button">เริ่มรอบใหม่</button></div>
+  </section>
+
+  <section aria-labelledby="s5">
+    <h2 id="s5"><span class="step">ขั้น 5</span>รายได้สู่เป้า 10,000 บาท</h2>
+    <div class="big" id="total">0 บาท</div>
+    <div class="meter" aria-hidden="true"><i id="bar"></i></div>
+    <p class="hint" id="remain"></p>
+    <form class="inc-form" id="inc-form">
+      <input type="date" id="inc-date" aria-label="วันที่">
+      <input type="number" id="inc-amt" min="0" step="0.01" placeholder="ค่าคอม (บาท)" aria-label="ค่าคอม">
+      <button class="btn primary" type="submit">บันทึก</button>
+    </form>
+    <ul class="log" id="log"></ul>
+    <p class="hint">ดูยอดได้ในหน้า Shopee Affiliate ยอดรออนุมัติจะได้จริงหลังผู้ซื้อกดรับสินค้า</p>
+  </section>
+</div>
+
+<script>
+const FALLBACK = {"hub":"https://noomrachit.github.io/yingad-links/","handle":"@pora7307","products":[
+ {"id":"charger","name":"หัวชาร์จเร็ว","link":"https://s.shopee.co.th/2gBfx3EI2d","code":"BHV-YAQ-PHG","hooks":["ชาร์จช้าจนหงุดหงิด?","มือถือแบตหมดบ่อย?","หัวชาร์จที่ผมใช้ทุกวัน"],"benefits":["ชาร์จเร็วกว่าหัวทั่วไป","เสียบได้หลายอุปกรณ์","ขนาดเล็ก พกง่าย"],"tags":["หัวชาร์จ","ของมันต้องมี","รีวิวของใช้"]},
+ {"id":"earbuds","name":"หูฟังบลูทูธ","link":"https://s.shopee.co.th/113RxZPuej","code":"AYL-CVZ-CXK","hooks":["หูฟังที่ผมใช้ตัดต่อทุกคลิป","สายหูฟังพันกันอีกแล้ว?","หูฟังไร้สาย งบไม่แรง"],"benefits":["ไร้สาย ไม่พันกัน","ใส่สบาย ใช้ได้ทั้งวัน","ฟังเพลง ประชุม ตัดต่อได้หมด"],"tags":["หูฟังบลูทูธ","หูฟังไร้สาย","รีวิวของใช้"]},
+ {"id":"cable","name":"ที่จัดเก็บสายไฟ","link":"https://s.shopee.co.th/3B7wYCxb3B","code":"BNM-FSS-YPG","hooks":["โต๊ะรกเพราะสายไฟ?","ของชิ้นเล็กที่ทำโต๊ะดูโปร","จัดโต๊ะทำงานใน 5 นาที"],"benefits":["เก็บสายเป็นระเบียบ","โต๊ะดูสะอาดตาทันที","หยิบสายใช้ง่าย ไม่พันกัน"],"tags":["จัดโต๊ะทำงาน","deskSetup","ของแต่งโต๊ะ"]},
+ {"id":"watch","name":"นาฬิกาอัจฉริยะ","link":"https://s.shopee.co.th/4fwkKZSabs","code":"ADN-BLU-SQY","hooks":["ลืมดูแจ้งเตือนบ่อย?","นาฬิกาที่ช่วยจัดเวลาทั้งวัน","อยากรู้ว่าวันนี้เดินกี่ก้าว?"],"benefits":["แจ้งเตือนจากมือถือบนข้อมือ","นับก้าว จับเวลา ตั้งปลุก","ใส่ได้ทุกวัน แบตอยู่นาน"],"tags":["สมาร์ทวอทช์","นาฬิกาอัจฉริยะ","ของใช้ไอที"]},
+ {"id":"chatplayground","name":"ChatPlayground","link":"https://www.chatplayground.ai/?ref=rachitdr","code":"","hooks":["ถามคำถามเดียว เอไอ 5 ตัวตอบพร้อมกัน","เอไอตัวไหนเก่งสุด?","เลิกสลับแอปเอไอไปมา"],"benefits":["รวมเอไอดังไว้ที่เดียว","เทียบคำตอบได้ในหน้าจอเดียว","ไม่ต้องสมัครแยกทีละเจ้า"],"tags":["เอไอ","สอนใช้AI","ChatGPT"]}
+]};
+
+const store = {
+  get(k, d){ try { const v = localStorage.getItem('yingad:'+k); return v ? JSON.parse(v) : d; } catch(e){ return d; } },
+  set(k, v){ try { localStorage.setItem('yingad:'+k, JSON.stringify(v)); } catch(e){} }
+};
+
+let DATA = FALLBACK, products = [], cur = 0, hookIx = 0, platform = 'tiktok', photo = null;
+const $ = id => document.getElementById(id);
+const DISC = 'ลิงก์แนะนำ ช่องได้ค่าคอมมิชชันโดยคุณไม่เสียเงินเพิ่ม';
+
+/* ---------- สินค้า ---------- */
+function allProducts(){ return DATA.products.concat(store.get('custom', [])); }
+function renderChips(){
+  products = allProducts();
+  $('chips').innerHTML = '';
+  products.forEach((p, i) => {
+    const b = document.createElement('button');
+    b.className = 'chip'; b.type = 'button'; b.textContent = p.name;
+    b.setAttribute('aria-pressed', i === cur);
+    b.onclick = () => { cur = i; hookIx = 0; photo = null; $('photo').value = ''; renderChips(); refresh(); };
+    $('chips').appendChild(b);
+  });
+  const p = products[cur];
+  $('meta').innerHTML = '';
+  const a = document.createElement('a'); a.href = p.link; a.target = '_blank'; a.rel = 'noopener'; a.textContent = p.link;
+  const s1 = document.createElement('span'); s1.append('ลิงก์: ', a);
+  $('meta').appendChild(s1);
+  if (p.code){ const s2 = document.createElement('span'); s2.innerHTML = 'โค้ดสินค้า: <b></b>'; s2.querySelector('b').textContent = p.code; $('meta').appendChild(s2); }
+}
+$('np-add').onclick = () => {
+  const name = $('np-name').value.trim(), link = $('np-link').value.trim();
+  const benefits = $('np-benefits').value.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 3);
+  if (!name || !/^https?:\/\//.test(link)){ $('np-name').focus(); $('np-name').placeholder = 'ใส่ชื่อสินค้าและลิงก์ที่ขึ้นต้นด้วย https://'; return; }
+  while (benefits.length < 3) benefits.push(['ใช้งานง่าย','คุ้มราคา','รีวิวดี'][benefits.length]);
+  const custom = store.get('custom', []);
+  custom.push({ id: 'c' + Date.now(), name, link, code: $('np-code').value.trim(), hooks: [name + ' ที่ผมใช้จริง', 'ของดีที่อยากบอกต่อ', 'ใครหา' + name + ' ดูตัวนี้'], benefits, tags: [name.replace(/\s/g, ''), 'รีวิวของใช้', 'ป้ายยา'] });
+  store.set('custom', custom);
+  ['np-name','np-link','np-code','np-benefits'].forEach(id => $(id).value = '');
+  cur = allProducts().length - 1; renderChips(); refresh();
+};
+
+/* ---------- แคปชัน ---------- */
+const PLATFORMS = [['tiktok','TikTok'],['facebook','Facebook / Reels'],['shorts','YouTube Shorts'],['group','กลุ่ม / ไลน์']];
+function tags(p){ return p.tags.concat(['รีวิว','ป้ายยา']).map(t => '#' + t.replace(/\s/g,'')).join(' '); }
+function caption(p, kind){
+  const h = p.hooks[hookIx % p.hooks.length], b = p.benefits, code = p.code ? `\nโค้ดสินค้า ${p.code}` : '';
+  if (kind === 'tiktok') return `${h}\n${b[0]} · ${b[1]}\nลิงก์อยู่ในโปรไฟล์${code}\n\n${tags(p)}\n(${DISC})`;
+  if (kind === 'facebook') return `${h}\n\nใช้${p.name}มาสักพัก ชอบอยู่ 3 ข้อ\n1. ${b[0]}\n2. ${b[1]}\n3. ${b[2]}\n\nใครสนใจ กดดูได้ที่นี่ ${p.link}${code}\n\n${DISC}`;
+  if (kind === 'shorts') return `ชื่อคลิป: ${h} | ${p.name}\n\nคำอธิบาย:\n${b.join(' · ')}\nลิงก์สินค้าและเครื่องมือทั้งหมด ${DATA.hub}\n${DISC}\n\n${tags(p)} #shorts`;
+  return `แชร์ของที่ใช้จริงครับ ${p.name}\n${b[0]} แล้วก็${b[1]}\nใครกำลังหาอยู่ ลองดูตัวนี้ ${p.link}\n\n(${DISC})`;
+}
+function renderTabs(){
+  $('tabs').innerHTML = '';
+  PLATFORMS.forEach(([k, label]) => {
+    const t = document.createElement('button');
+    t.className = 'tab'; t.type = 'button'; t.role = 'tab'; t.textContent = label;
+    t.setAttribute('aria-selected', k === platform);
+    t.onclick = () => { platform = k; renderTabs(); $('caption').value = caption(products[cur], platform); };
+    $('tabs').appendChild(t);
+  });
+}
+$('shuffle').onclick = () => { hookIx++; refresh(); };
+$('copy').onclick = () => {
+  const btn = $('copy'), txt = $('caption').value;
+  const ok = () => { btn.textContent = 'คัดลอกแล้ว'; setTimeout(() => btn.textContent = 'คัดลอกแคปชัน', 1600); };
+  const fallback = () => { $('caption').select(); try { document.execCommand('copy'); ok(); } catch(e){ btn.textContent = 'เลือกข้อความแล้ว กดคัดลอกเอง'; } };
+  if (navigator.clipboard) navigator.clipboard.writeText(txt).then(ok, fallback); else fallback();
+};
+
+/* ---------- คลิป ---------- */
+const cv = $('cv'), ctx = cv.getContext('2d'), W = 1080, H = 1920, DUR = 15;
+const C = { bg1:'#0F1222', bg2:'#1E2446', fg:'#ECEEF8', muted:'#9AA1C0', acc:'#8C9BFF', warm:'#F0A04B', ink:'#1A1206', card:'#242A50' };
+const F = (w, s) => `${w} ${s}px "Anuphan", "Chakra Petch", sans-serif`;
+const seg = window.Intl && Intl.Segmenter ? new Intl.Segmenter('th', { granularity: 'word' }) : null;
+function words(s){ return seg ? Array.from(seg.segment(s), x => x.segment) : Array.from(s); }
+function wrap(s, maxW){
+  const out = []; let line = '';
+  for (const w of words(s)){
+    const t = line + w;
+    if (ctx.measureText(t).width > maxW && line.trim()){ out.push(line.trim()); line = w.trimStart(); } else line = t;
+  }
+  if (line.trim()) out.push(line.trim());
+  return out;
+}
+const ease = t => 1 - Math.pow(1 - Math.min(Math.max(t, 0), 1), 3);
+function text(s, y, size, color, alpha = 1, weight = 700, maxW = 900, lh = 1.3){
+  ctx.font = F(weight, size); ctx.fillStyle = color; ctx.globalAlpha = alpha; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+  const lines = wrap(s, maxW);
+  lines.forEach((l, i) => ctx.fillText(l, W / 2, y + i * size * lh));
+  ctx.globalAlpha = 1;
+  return y + lines.length * size * lh;
+}
+function rrect(x, y, w, h, r, fill){ ctx.beginPath(); ctx.roundRect(x, y, w, h, r); ctx.fillStyle = fill; ctx.fill(); }
+function frame(t){
+  const p = products[cur], hook = p.hooks[hookIx % p.hooks.length];
+  const g = ctx.createLinearGradient(0, 0, 0, H); g.addColorStop(0, C.bg1); g.addColorStop(1, C.bg2);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  if (t < 3.5){
+    const a = ease(t / 0.6);
+    ctx.save(); ctx.translate(0, (1 - a) * 60);
+    text(hook, 700, 112, C.fg, a, 700, 900);
+    ctx.restore();
+    text(p.name, 1180, 64, C.warm, ease((t - 0.9) / 0.6), 600);
+  } else if (t < 10){
+    const s = t - 3.5;
+    let y = 260;
+    if (photo){
+      const box = 640, a = ease(s / 0.5);
+      const r = Math.min(box / photo.width, box / photo.height), w = photo.width * r, h = photo.height * r;
+      ctx.globalAlpha = a; rrect((W - box) / 2 - 20, y - 20, box + 40, box + 40, 40, '#FFFFFF');
+      ctx.drawImage(photo, (W - w) / 2, y + (box - h) / 2, w, h); ctx.globalAlpha = 1;
+      y += box + 90;
+    } else y = 520;
+    y = text(p.name, y, 96, C.warm, ease(s / 0.5), 700) + 40;
+    p.benefits.forEach((b, i) => {
+      const a = ease((s - 0.8 - i * 0.9) / 0.5); if (a <= 0) return;
+      ctx.font = F(600, 66); const lines = wrap(b, 740), bh = lines.length * 66 * 1.3 + 60;
+      ctx.globalAlpha = a; rrect(120 + (1 - a) * 60, y, W - 240, bh, 32, C.card);
+      ctx.fillStyle = C.acc; ctx.beginPath(); ctx.arc(190 + (1 - a) * 60, y + bh / 2, 16, 0, 7); ctx.fill();
+      ctx.fillStyle = C.fg; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      lines.forEach((l, j) => ctx.fillText(l, 240 + (1 - a) * 60, y + 30 + j * 66 * 1.3));
+      ctx.globalAlpha = 1; y += bh + 26;
+    });
+  } else {
+    const s = t - 10, a = ease(s / 0.5), b = ease((s - 0.6) / 0.5);
+    let y = text('สนใจกดลิงก์', 560, 110, C.fg, a);
+    y = text('ในโปรไฟล์ได้เลย', y, 110, C.fg, a) + 80;
+    const pulse = 1 + 0.035 * Math.sin(s * 6), bw = 860 * pulse, bh = 170 * pulse;
+    ctx.globalAlpha = b; rrect((W - bw) / 2, y, bw, bh, bh / 2, C.warm); ctx.globalAlpha = 1;
+    text(p.code ? 'โค้ด ' + p.code : 'ติดตาม ' + DATA.handle, y + bh / 2 - 44, 70, C.ink, b, 700, 820);
+    text(p.code ? 'ติดตาม ' + DATA.handle : '', y + bh + 70, 56, C.fg, b, 600);
+    text(DISC, 1640, 40, C.muted, b, 500, 900);
+  }
+  const edge = Math.min(t, DUR - t);
+  if (edge < 0.25){ ctx.fillStyle = C.bg1; ctx.globalAlpha = 1 - Math.max(edge, 0) / 0.25; ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1; }
+}
+let raf = 0;
+function run(onEnd){
+  cancelAnimationFrame(raf);
+  const t0 = performance.now();
+  const loop = now => {
+    const t = (now - t0) / 1000;
+    if (t >= DUR){ frame(DUR - 0.001); onEnd && onEnd(); return; }
+    frame(t); raf = requestAnimationFrame(loop);
+  };
+  raf = requestAnimationFrame(loop);
+}
+$('play').onclick = () => run(() => frame(7));
+$('photo').onchange = e => {
+  const f = e.target.files[0]; if (!f) { photo = null; frame(7); return; }
+  const img = new Image(); img.onload = () => { photo = img; frame(7); }; img.src = URL.createObjectURL(f);
+};
+$('rec').onclick = () => {
+  if (!window.MediaRecorder || !cv.captureStream){ $('status').textContent = 'เบราว์เซอร์นี้สร้างไฟล์คลิปไม่ได้ ลองเปิดใน Chrome บนคอมพิวเตอร์'; return; }
+  const types = ['video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9','video/webm'];
+  const mime = types.find(t => MediaRecorder.isTypeSupported(t)) || '';
+  const rec = new MediaRecorder(cv.captureStream(30), { mimeType: mime, videoBitsPerSecond: 8e6 });
+  const chunks = []; rec.ondataavailable = e => e.data.size && chunks.push(e.data);
+  rec.onstop = () => {
+    const ext = mime.includes('mp4') ? 'mp4' : 'webm';
+    const blob = new Blob(chunks, { type: mime || 'video/webm' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = `คลิป-${products[cur].name}.${ext}`; document.body.appendChild(a); a.click(); a.remove();
+    $('status').textContent = ext === 'mp4' ? 'บันทึกไฟล์ MP4 แล้ว' : 'บันทึกไฟล์ WEBM แล้ว ถ้าแอปไม่รับ ให้แปลงเป็น MP4 ก่อนโพสต์';
+    $('rec').disabled = false;
+  };
+  $('rec').disabled = true; $('status').textContent = 'กำลังสร้างคลิป 15 วินาที…';
+  rec.start(); run(() => setTimeout(() => rec.stop(), 150));
+};
+
+/* ---------- คิวโพสต์ ---------- */
+const QUEUE = [
+  ['วันที่ 1', ['โพสต์รีวิวสินค้า 1 ชิ้นในเฟซบุ๊กส่วนตัวพร้อมรูปจริง (แคปชันแบบ Facebook)', 'ส่งในไลน์กลุ่มเพื่อนหรือครอบครัว (แคปชันแบบกลุ่ม / ไลน์)', 'ลงคลิปสินค้าเดียวกันบน TikTok และ Reels']],
+  ['วันที่ 2', ['ทำคลิปสินค้าชิ้นที่ 2 แล้วลง TikTok, Reels, Shorts', 'ปักหมุดคอมเมนต์ที่มีลิงก์ใต้คลิปเมื่อวาน', 'ตอบทุกคอมเมนต์ที่ถามเรื่องสินค้า']],
+  ['วันที่ 3', ['โพสต์รีวิวในกลุ่มเฟซบุ๊กที่ตรงกับสินค้า 2 กลุ่ม (อ่านกฎกลุ่มก่อน)', 'เปิด Shopee Affiliate ดูว่าลิงก์ไหนมีคนกด', 'ทำคลิปเพิ่มให้สินค้าที่มีคนกดมากที่สุด']]
+];
+function renderQueue(){
+  const done = store.get('queue', {});
+  $('queue').innerHTML = '';
+  QUEUE.forEach(([day, tasks], d) => {
+    const h = document.createElement('p'); h.className = 'day'; h.textContent = day; $('queue').appendChild(h);
+    const ul = document.createElement('ul'); ul.className = 'queue';
+    tasks.forEach((t, i) => {
+      const k = d + '-' + i, li = document.createElement('li');
+      li.className = 'task' + (done[k] ? ' done' : '');
+      const id = 'q' + k; li.innerHTML = `<input type="checkbox" id="${id}"><label for="${id}"><span></span></label>`;
+      li.querySelector('span').textContent = t; li.querySelector('input').checked = !!done[k];
+      li.querySelector('input').onchange = e => { done[k] = e.target.checked; store.set('queue', done); renderQueue(); };
+      ul.appendChild(li);
+    });
+    $('queue').appendChild(ul);
+  });
+}
+$('q-reset').onclick = () => { store.set('queue', {}); renderQueue(); };
+
+/* ---------- รายได้ ---------- */
+const GOAL = 10000, fmt = n => n.toLocaleString('th-TH', { maximumFractionDigits: 2 });
+function renderIncome(){
+  const log = store.get('income', []), total = log.reduce((s, x) => s + x.amt, 0);
+  $('total').textContent = fmt(total) + ' บาท';
+  $('bar').style.width = Math.min(100, total / GOAL * 100) + '%';
+  $('remain').textContent = total >= GOAL ? 'ถึงเป้า 10,000 บาทแล้ว' : `อีก ${fmt(GOAL - total)} บาทถึงเป้า`;
+  $('log').innerHTML = '';
+  log.slice().reverse().forEach((x, ri) => {
+    const i = log.length - 1 - ri, li = document.createElement('li');
+    li.innerHTML = '<span></span><span><b></b> <button type="button" aria-label="ลบรายการ">ลบ</button></span>';
+    li.querySelector('span').textContent = x.date; li.querySelector('b').textContent = fmt(x.amt) + ' บาท';
+    li.querySelector('button').onclick = () => { log.splice(i, 1); store.set('income', log); renderIncome(); };
+    $('log').appendChild(li);
+  });
+}
+$('inc-date').valueAsDate = new Date();
+$('inc-form').onsubmit = e => {
+  e.preventDefault();
+  const amt = parseFloat($('inc-amt').value); if (!(amt > 0)) { $('inc-amt').focus(); return; }
+  const log = store.get('income', []); log.push({ date: $('inc-date').value, amt }); store.set('income', log);
+  $('inc-amt').value = ''; renderIncome();
+};
+
+/* ---------- เริ่ม ---------- */
+function refresh(){ renderTabs(); $('caption').value = caption(products[cur], platform); frame(7); }
+async function init(){
+  try { const r = await fetch('../products.json', { cache: 'no-store' }); if (r.ok) DATA = await r.json(); } catch(e){}
+  renderChips(); refresh(); renderQueue(); renderIncome();
+  try { await Promise.all([document.fonts.load('700 100px "Anuphan"'), document.fonts.load('600 60px "Anuphan"')]); } catch(e){}
+  frame(7);
+}
+init();
+</script>
+</body>
+</html>

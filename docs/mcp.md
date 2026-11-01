@@ -2,7 +2,9 @@
 
 Endpoint: `POST https://<โดเมนแอป>/mcp` (Streamable HTTP, stateless)
 
-เครื่องมือ: `list_integrations`, `create_post` (โพสต์จริง), `list_posts`, `get_analytics`
+เครื่องมือ: `list_integrations`, `create_post` (โพสต์จริงทันที), `create_draft` (ร่าง/ตั้งเวลา), `publish_post` (โพสต์ร่างที่อนุมัติแล้ว), `import_yingad` (ดึงชุดของวันจากยิงแอดเป็นร่าง), `list_posts`, `get_analytics`
+
+แนะนำให้ผู้ช่วย AI ใช้ `create_draft` / `import_yingad` แล้วรอผู้ใช้อนุมัติก่อน `publish_post`
 
 ## Claude Code
 ```bash

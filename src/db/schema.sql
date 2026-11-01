@@ -34,5 +34,14 @@ CREATE TABLE IF NOT EXISTS post_results (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+-- ฉบับร่าง / ตั้งเวลา (แนวคิดจาก Postiz: draft → schedule → publish)
+--   status: published (โพสต์ทันที แบบเดิม) | draft (รออนุมัติ) | scheduled (รอถึงเวลา) | publishing | failed
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'published';
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS scheduled_at TIMESTAMPTZ;
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS integration_ids JSONB;      -- ปลายทางที่เลือกไว้ (null = ทุกบัญชี)
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS privacy_status TEXT;        -- YouTube: private | unlisted | public
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS source TEXT;                -- ที่มา เช่น 'yingad:2026-10-19'
+CREATE INDEX IF NOT EXISTS idx_posts_due ON posts(scheduled_at) WHERE status = 'scheduled';
+
 CREATE INDEX IF NOT EXISTS idx_post_results_post_id ON post_results(post_id);
 CREATE INDEX IF NOT EXISTS idx_integrations_platform ON integrations(platform);

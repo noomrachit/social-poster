@@ -7,7 +7,8 @@ import { Router as makeRouter } from "express";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
-import { createPost, getAnalytics, listIntegrations, listPosts } from "./lib/services.js";
+import { createDraft, createPost, getAnalytics, importYingad, listIntegrations, listPosts, publishStoredPost } from "./lib/services.js";
+import { parseScheduledAt } from "./lib/schedule.js";
 import { PRIVACY_STATUSES } from "./providers/types.js";
 
 function safeEqual(a: string, b: string): boolean {
@@ -65,6 +66,82 @@ export function buildMcpServer(): McpServer {
     async ({ content, mediaUrls, integrationIds, privacyStatus }) => {
       const out = await createPost(content, mediaUrls ?? [], integrationIds, privacyStatus);
       return out ? json(out) : failure("ไม่มีบัญชีที่เชื่อมไว้ตรงกับที่ขอ (ลอง list_integrations)");
+    }
+  );
+
+  server.registerTool(
+    "create_draft",
+    {
+      title: "บันทึกฉบับร่าง / ตั้งเวลา",
+      description:
+        "บันทึกโพสต์เป็นฉบับร่าง (ยังไม่โพสต์) หรือใส่ scheduledAt เพื่อตั้งเวลา ระบบจะโพสต์เองเมื่อถึงเวลา " +
+        "ใช้ตัวนี้แทน create_post เมื่อผู้ใช้ยังไม่ได้อนุมัติเนื้อหา",
+      inputSchema: {
+        content: z.string().min(1).describe("ข้อความโพสต์ (YouTube: บรรทัดแรกคือชื่อคลิป)"),
+        mediaUrls: z.array(z.string().url()).optional().describe("ลิงก์ไฟล์ (วิดีโอ/รูป)"),
+        integrationIds: z.array(z.string()).optional().describe("id บัญชีปลายทาง (ไม่ใส่ = ทุกบัญชี)"),
+        privacyStatus: z.enum(PRIVACY_STATUSES).optional().describe("YouTube: private (ค่าเริ่มต้น) | unlisted | public"),
+        scheduledAt: z.string().optional().describe("เวลาโพสต์ ISO 8601 เช่น 2026-11-02T19:00:00+02:00 (ไม่ใส่ = ร่าง)"),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    },
+    async ({ scheduledAt, ...rest }) => {
+      let when: Date | undefined;
+      if (scheduledAt !== undefined) {
+        const parsed = parseScheduledAt(scheduledAt);
+        if (typeof parsed === "string") return failure(parsed);
+        when = parsed;
+      }
+      const out = await createDraft({ ...rest, scheduledAt: when });
+      return out ? json(out) : failure("ไม่มีบัญชีที่เชื่อมไว้ตรงกับที่ขอ (ลอง list_integrations)");
+    }
+  );
+
+  server.registerTool(
+    "publish_post",
+    {
+      title: "โพสต์ฉบับร่าง",
+      description: "ยิงโพสต์ที่เป็นร่างหรือตั้งเวลาไว้ทันที (ย้อนกลับไม่ได้) เรียกเฉพาะเมื่อผู้ใช้อนุมัติแล้ว",
+      inputSchema: { postId: z.string().min(1).describe("id โพสต์จาก create_draft / import_yingad") },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    },
+    async ({ postId }) => {
+      const out = await publishStoredPost(postId);
+      if (out.ok) return json(out.outcome);
+      if (out.reason === "not_found") return failure("ไม่พบโพสต์นี้");
+      if (out.reason === "not_publishable") return failure(`โพสต์นี้สถานะ ${out.status} แล้ว ยิงซ้ำไม่ได้`);
+      return failure("ไม่มีบัญชีที่เชื่อมไว้ตรงกับที่ขอ");
+    }
+  );
+
+  server.registerTool(
+    "import_yingad",
+    {
+      title: "ดึงชุดของวันจากยิงแอด",
+      description:
+        "ดึง daily-pick ของโปรเจกต์ยิงแอด (คลิป + แคปชันสินค้าเด่น) มาเป็นฉบับร่าง YouTube Shorts ไม่โพสต์จนกว่าจะเรียก publish_post " +
+        "หรือใส่ scheduledAt เพื่อตั้งเวลา เรียกซ้ำวันเดิมได้ คืนร่างเดิม",
+      inputSchema: {
+        date: z.string().optional().describe("YYYY-MM-DD (ไม่ใส่ = วันนี้ เวลา Asia/Jerusalem)"),
+        integrationIds: z.array(z.string()).optional().describe("id บัญชีปลายทาง (ไม่ใส่ = ทุกบัญชี)"),
+        privacyStatus: z.enum(PRIVACY_STATUSES).optional().describe("YouTube: private (ค่าเริ่มต้น) | unlisted | public"),
+        scheduledAt: z.string().optional().describe("เวลาโพสต์ ISO 8601 (ไม่ใส่ = ร่าง)"),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    },
+    async ({ scheduledAt, ...rest }) => {
+      let when: Date | undefined;
+      if (scheduledAt !== undefined) {
+        const parsed = parseScheduledAt(scheduledAt);
+        if (typeof parsed === "string") return failure(parsed);
+        when = parsed;
+      }
+      try {
+        const out = await importYingad({ ...rest, scheduledAt: when });
+        return out.ok ? json(out) : failure(out.error);
+      } catch (err) {
+        return failure(err instanceof Error ? err.message : String(err));
+      }
     }
   );
 
