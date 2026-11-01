@@ -54,6 +54,32 @@ Response (ตัวอย่าง):
 }
 ```
 
+## ฉบับร่างและตั้งเวลา
+
+`POST /posts` รับ `mode` เพิ่ม (ค่าเริ่มต้น `now` = โพสต์ทันทีแบบเดิม):
+
+| mode | ผล |
+|---|---|
+| `now` | โพสต์ทันที รอผลทุกแพลตฟอร์ม |
+| `draft` | บันทึกเป็นร่าง ยังไม่โพสต์ |
+| `schedule` | ต้องใส่ `scheduledAt` (ISO 8601) ระบบโพสต์เองเมื่อถึงเวลา (ตรวจทุก 60 วินาที) |
+
+- `POST /posts/:id/publish` — อนุมัติแล้วโพสต์ร่าง/โพสต์ตั้งเวลาทันที (ยิงซ้ำไม่ได้)
+- สถานะโพสต์: `draft` → `scheduled` → `publishing` → `published` (มีอย่างน้อย 1 แพลตฟอร์มสำเร็จ) หรือ `failed`
+
+## เชื่อมกับยิงแอด (noomrachit/yingad-links)
+
+`POST /posts/import/yingad` ดึง `daily-pick/YYYY-MM-DD.md` ที่เดชา (Claude) ทำทุกเช้า → ร่าง YouTube Shorts (คลิป + ชื่อคลิป + แคปชัน + ข้อความเปิดเผยลิงก์นายหน้า) ไม่โพสต์จนกว่าจะ publish
+
+```bash
+curl -X POST https://<โดเมนแอป>/posts/import/yingad -H "x-admin-token: $ADMIN_TOKEN" \
+  -H 'Content-Type: application/json' -d '{"date":"2026-10-19"}'
+```
+
+- ไม่ใส่ `date` = วันนี้ (Asia/Jerusalem) · ใส่ `scheduledAt` = ตั้งเวลาเลย · เรียกซ้ำวันเดิมได้ คืนร่างเดิม
+- ผ่าน MCP: `import_yingad` → `publish_post`
+- หน้าเว็บของยิงแอดย้ายมาไว้ที่ `/yingad/` (หน้ารวมลิงก์) และ `/yingad/studio/` (เครื่องมือแคปชัน/คลิป) ส่วนแนวทางช่องและตัวทำชุดรายวันอยู่ที่ `yingad/` ดู [yingad/README.md](yingad/README.md)
+
 ## สตูดิโอสร้างคลิป (`/studio.html`)
 
 พิมพ์หัวข้อ → ได้คลิปแนวตั้ง 9:16 (สคริปต์ ภาพเคลื่อนไหว เสียงพากย์ไทย) → อัดเป็นไฟล์ในเบราว์เซอร์ → อัปโหลดผ่าน `POST /media` แล้วโพสต์ผ่าน `POST /posts` (YouTube Shorts) ในหน้าเดียว

@@ -10,6 +10,7 @@ import { mediaRouter } from "./routes/media.js";
 import { studioRouter } from "./routes/studio.js";
 import { mcpRouter } from "./mcp.js";
 import { requireAdmin } from "./lib/admin-auth.js";
+import { runDuePosts } from "./lib/services.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -35,3 +36,17 @@ const port = Number(process.env.PORT) || 3000;
 app.listen(port, () => {
   console.log(`social-poster listening on port ${port}`);
 });
+
+// ตัวตั้งเวลา: ทุก 60 วินาที ยิงโพสต์ status = scheduled ที่ถึงเวลาแล้ว (ปิดได้ด้วย SCHEDULER_DISABLED=1)
+if (process.env.SCHEDULER_DISABLED !== "1") {
+  let running = false;
+  setInterval(() => {
+    if (running) return;
+    running = true;
+    runDuePosts()
+      .catch((err) => console.error("scheduler error:", err))
+      .finally(() => {
+        running = false;
+      });
+  }, 60_000).unref();
+}
