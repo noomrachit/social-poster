@@ -96,3 +96,7 @@ curl -X POST https://<โดเมนแอป>/posts/import/yingad -H "x-admin-
 2. แนบ Postgres plugin (Railway จะตั้ง `DATABASE_URL` ให้อัตโนมัติ)
 3. ตั้ง ENV: `TOKEN_ENCRYPTION_KEY`, `APP_BASE_URL` (ใส่ URL ที่ Railway ออกให้), `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
 4. Build command: `npm run build` / Start command: `npm run build && npm run migrate && npm start` (หรือรัน `npm run migrate` แยกครั้งแรกผ่าน Railway shell)
+
+## โมดูลในรีโป
+
+- `shopee/` — Shopee Affiliate Auto (Python: ดึงสินค้า → เรนเดอร์วิดีโอ → คิวอนุมัติ → โพสต์) deploy แยกเป็น service ของตัวเอง ดู `shopee/README.md`

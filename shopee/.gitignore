@@ -1,0 +1,11 @@
+.env
+state.db
+out/
+rejects.jsonl
+assets/bgm/*.mp3
+# หมายเหตุ: ฟอนต์ Noto Sans Thai ใน assets/fonts/ ถูกคอมมิตไว้ตั้งใจ (ฟรี, OFL license)
+# เพื่อให้ deploy ขึ้น Railway ได้ครบโดยไม่ต้องอัปโหลดฟอนต์เพิ่ม
+__pycache__/
+*.pyc
+.venv/
+assets/products/

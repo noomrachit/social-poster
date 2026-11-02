@@ -1,0 +1,10 @@
+.env
+.git
+.gitignore
+state.db
+out/
+assets/products/
+__pycache__/
+*.pyc
+.venv/
+tests/

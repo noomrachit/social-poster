@@ -1,0 +1,27 @@
+# Core
+requests>=2.31.0
+python-dotenv>=1.0.0
+
+# Web dashboard (app.py)
+Flask>=3.0.0
+gunicorn>=21.2.0
+
+# Rendering (MoviePy + ffmpeg + Thai text)
+moviepy>=2.1.0
+Pillow>=10.0.0
+pythainlp>=5.0.0
+
+# DB
+# (SQLite stdlib — no extra dep)
+
+# YouTube
+google-api-python-client>=2.100.0
+google-auth-oauthlib>=1.1.0
+google-auth-httplib2>=0.1.1
+
+# TikTok (ใช้ requests โดยตรง — ไม่มี SDK ทางการที่จำเป็น)
+
+# Orchestration / scheduling
+APScheduler>=3.10.0
+
+# Notifications (Discord) — optional, HTTP only, no dep
