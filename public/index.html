@@ -94,6 +94,13 @@
       <span class="muted" id="upload-status"></span>
     </div>
 
+    <label for="privacy">ความเป็นส่วนตัวของวิดีโอ (YouTube)</label>
+    <select id="privacy">
+      <option value="private">ส่วนตัว (เห็นคนเดียว) — ค่าเริ่มต้น</option>
+      <option value="unlisted">ไม่แสดงในรายการ (มีลิงก์ถึงดูได้)</option>
+      <option value="public">สาธารณะ</option>
+    </select>
+
     <label>ปลายทาง (ไม่เลือก = ทุกบัญชี)</label>
     <div id="target-list"><div class="muted">กำลังโหลดบัญชี...</div></div>
 
@@ -329,6 +336,7 @@
 
     var body = { content: content, mediaUrls: media };
     if (integrationsCache.length) body.integrationIds = checked;
+    body.privacyStatus = $("privacy").value;
 
     var btn = $("send");
     btn.disabled = true;
