@@ -57,6 +57,7 @@
     <button data-tab="post" class="active">โพสต์</button>
     <button data-tab="accounts">บัญชี</button>
     <button data-tab="history">ประวัติ</button>
+    <button data-tab="voice">เสียง</button>
   </div>
 
   <section id="tab-post" class="card">
@@ -119,6 +120,15 @@
     <div class="msg" id="accounts-msg"></div>
   </section>
 
+  <section id="tab-voice" class="card hidden">
+    <label for="tts-text">ข้อความที่จะให้พูด (ไม่เกิน 2,000 ตัวอักษร)</label>
+    <textarea id="tts-text" placeholder="พิมพ์สคริปต์ที่ต้องการให้อ่าน"></textarea>
+    <div style="margin-top:14px;"><button id="tts-go" class="primary">สร้างเสียง</button></div>
+    <div class="msg" id="tts-msg"></div>
+    <audio id="tts-audio" controls class="hidden" style="width:100%; margin-top:10px;"></audio>
+    <div id="tts-link" class="muted" style="margin-top:6px; word-break:break-all;"></div>
+  </section>
+
   <section id="tab-history" class="card hidden">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
       <strong>ประวัติโพสต์ล่าสุด</strong>
@@ -173,13 +183,35 @@
   var tabButtons = document.querySelectorAll("#tabs button");
   function showTab(name) {
     tabButtons.forEach(function (b) { b.classList.toggle("active", b.dataset.tab === name); });
-    ["post", "accounts", "history"].forEach(function (t) {
+    ["post", "accounts", "history", "voice"].forEach(function (t) {
       $("tab-" + t).classList.toggle("hidden", t !== name);
     });
     if (name === "accounts") loadAccounts();
     if (name === "history") loadHistory();
     if (name === "post") loadTargets();
   }
+  // ---------- voice tab ----------
+  $("tts-go").addEventListener("click", function () {
+    var text = $("tts-text").value.trim();
+    var msg = $("tts-msg");
+    var audio = $("tts-audio");
+    msg.className = "msg";
+    if (!text) { msg.textContent = "กรุณาใส่ข้อความ"; msg.className = "msg error"; return; }
+    var btn = $("tts-go");
+    btn.disabled = true;
+    msg.textContent = "กำลังสร้างเสียง...";
+    api("/tts", { method: "POST", body: { text: text } }).then(function (data) {
+      msg.textContent = "สร้างเสียงแล้ว";
+      msg.className = "msg success";
+      audio.src = data.url;
+      audio.classList.remove("hidden");
+      $("tts-link").textContent = data.url;
+    }).catch(function (e) {
+      msg.textContent = "สร้างเสียงไม่สำเร็จ: " + e.message;
+      msg.className = "msg error";
+    }).finally(function () { btn.disabled = false; });
+  });
+
   tabButtons.forEach(function (b) {
     b.addEventListener("click", function () { showTab(b.dataset.tab); });
   });

@@ -10,7 +10,7 @@ export const mediaRouter = Router();
 mediaRouter.post("/media", requireAdmin, async (req, res) => {
   const contentType = (req.headers["content-type"] ?? "").split(";")[0].trim().toLowerCase();
   if (!isAllowedType(contentType)) {
-    res.status(415).json({ error: "รองรับเฉพาะไฟล์ video/* และ image/* (ตั้ง content-type ให้ตรงชนิดไฟล์)" });
+    res.status(415).json({ error: "รองรับเฉพาะไฟล์ video/*, image/* และ audio/* (ตั้ง content-type ให้ตรงชนิดไฟล์)" });
     return;
   }
   try {

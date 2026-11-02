@@ -7,7 +7,7 @@ import { nanoid } from "nanoid";
 
 export const MAX_UPLOAD_BYTES = Number(process.env.MAX_UPLOAD_MB || 500) * 1024 * 1024;
 
-const ALLOWED_PREFIXES = ["video/", "image/"];
+const ALLOWED_PREFIXES = ["video/", "image/", "audio/"];
 // ชื่อไฟล์ที่เราสร้างเองเท่านั้น (nanoid + นามสกุล) — ใช้กัน path traversal ตอนอ่านไฟล์
 export const SAFE_NAME = /^[A-Za-z0-9_-]{10,}\.[a-z0-9]{1,5}$/;
 
@@ -24,6 +24,8 @@ const EXT_BY_TYPE: Record<string, string> = {
   "image/png": ".png",
   "image/webp": ".webp",
   "image/gif": ".gif",
+  "audio/mpeg": ".mp3",
+  "audio/wav": ".wav",
 };
 
 export function isAllowedType(contentType: string): boolean {

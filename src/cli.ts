@@ -18,6 +18,7 @@ const HELP = `social-poster CLI
   post "<ข้อความ>" [--media <url|ไฟล์>]... [--to <id,id>] [--privacy private|unlisted|public]
                                     โพสต์ (ไฟล์ในเครื่องจะอัปโหลดให้อัตโนมัติ)
                                     --privacy ใช้กับ YouTube (ค่าเริ่มต้น private)
+  tts "<ข้อความ>" [--voice <เสียง>]    สร้างเสียงพูด (mp3) คืน URL
   history                           ประวัติโพสต์ล่าสุด
   analytics [<postId>]              สถิติโพสต์ (YouTube: views/likes/comments)`;
 
@@ -105,6 +106,17 @@ async function main() {
         for (const r of p.results) console.log(`    ${r.status === "success" ? "✓" : "✗"} ${r.platform} ${r.remote_post_id ?? r.error_message ?? ""}`);
       }
       return;
+    }
+    case "tts": {
+      const text = positional.join(" ").trim();
+      if (!text) fail('ใช้: tts "<ข้อความ>" [--voice <เสียง>]');
+      const voice = flags.voice?.[0];
+      const out = await api("/tts", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ text, ...(voice ? { voice } : {}) }),
+      });
+      return console.log(out.url);
     }
     case "analytics": {
       const q = positional[0] ? `?postId=${encodeURIComponent(positional[0])}` : "";
