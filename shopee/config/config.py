@@ -48,6 +48,17 @@ class GoogleConfig:
 
 
 @dataclass
+class SocialPosterConfig:
+    """ถ้าตั้งครบ ระบบจะส่งวิดีโอเป็นฉบับร่างไป social-poster แทนการโพสต์เอง"""
+    url: str = field(default_factory=lambda: os.getenv("SOCIAL_POSTER_URL", ""))
+    token: str = field(default_factory=lambda: os.getenv("SOCIAL_POSTER_TOKEN", ""))
+
+    @property
+    def enabled(self) -> bool:
+        return bool(self.url and self.token)
+
+
+@dataclass
 class AppConfig:
     db_path: str = field(default_factory=lambda: os.getenv("DATABASE_PATH", "state.db"))
     output_dir: Path = field(default_factory=lambda: Path(os.getenv("OUTPUT_DIR", "out")))
@@ -63,6 +74,7 @@ class Config:
     shopee: ShopeeConfig = field(default_factory=ShopeeConfig)
     tiktok: TikTokConfig = field(default_factory=TikTokConfig)
     google: GoogleConfig = field(default_factory=GoogleConfig)
+    social_poster: SocialPosterConfig = field(default_factory=SocialPosterConfig)
     app: AppConfig = field(default_factory=AppConfig)
 
 

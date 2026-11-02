@@ -71,3 +71,10 @@ Pipeline จะตรวจ config → collect → ดาวน์โหลด�
 แก้ปัญหา `first_seen` หายก่อน INSERT, migrate คอลัมน์ `image_urls` / `local_images` อัตโนมัติ และไม่ reset สถานะ rendered/published เมื่อเก็บข้อมูลซ้ำ
 
 ลบข้อความโปรโมชั่นที่ไม่มีหลักฐานออกจาก template และ pipeline แล้ว แต่ส่วน Publisher/OAuth/Quota ที่สืบทอดมายังเป็น scaffold ที่ต้องตรวจและทดสอบแยกก่อนใช้งานจริง ห้ามตีความค่า quota หรือ signature ในโค้ดเก่าว่าได้รับการยืนยันใหม่ในเวอร์ชันนี้
+
+## ส่งเป็นฉบับร่างไป social-poster
+
+ตั้ง `SOCIAL_POSTER_URL` และ `SOCIAL_POSTER_TOKEN` (ค่า `ADMIN_TOKEN` ของ social-poster) แล้ว `python scripts/publish_approved.py` จะอัปโหลดวิดีโอที่อนุมัติแล้วไป social-poster เป็น **ฉบับร่าง** (ยังไม่โพสต์จริง) แทนการโพสต์เอง ไปกดโพสต์ที่หน้าเว็บ social-poster
+
+- แพลตฟอร์มที่ยังไม่มีบัญชีเชื่อมไว้ใน social-poster (เช่น TikTok) จะถูกข้าม คงสถานะ approved
+- ไม่ตั้งสองค่านี้ = ทำงานแบบเดิม (โพสต์ด้วย publisher ของตัวเอง)
