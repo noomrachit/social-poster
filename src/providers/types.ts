@@ -17,7 +17,7 @@ export type PrivacyStatus = (typeof PRIVACY_STATUSES)[number];
 export interface PublishInput {
   content: string;
   mediaUrls: string[];
-  /** ใช้กับ YouTube (ค่าเริ่มต้น private ถ้าไม่ระบุ) */
+  /** ใช้กับ YouTube (ค่าเริ่มต้น public ถ้าไม่ระบุ) */
   privacyStatus?: PrivacyStatus;
 }
 

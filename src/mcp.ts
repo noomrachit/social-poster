@@ -59,7 +59,7 @@ export function buildMcpServer(): McpServer {
         privacyStatus: z
           .enum(PRIVACY_STATUSES)
           .optional()
-          .describe("ความเป็นส่วนตัวของวิดีโอ YouTube: private (ค่าเริ่มต้น) | unlisted | public"),
+          .describe("ความเป็นส่วนตัวของวิดีโอ YouTube: private | unlisted | public (ค่าเริ่มต้น)"),
       },
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
     },
@@ -80,7 +80,7 @@ export function buildMcpServer(): McpServer {
         content: z.string().min(1).describe("ข้อความโพสต์ (YouTube: บรรทัดแรกคือชื่อคลิป)"),
         mediaUrls: z.array(z.string().url()).optional().describe("ลิงก์ไฟล์ (วิดีโอ/รูป)"),
         integrationIds: z.array(z.string()).optional().describe("id บัญชีปลายทาง (ไม่ใส่ = ทุกบัญชี)"),
-        privacyStatus: z.enum(PRIVACY_STATUSES).optional().describe("YouTube: private (ค่าเริ่มต้น) | unlisted | public"),
+        privacyStatus: z.enum(PRIVACY_STATUSES).optional().describe("YouTube: private | unlisted | public (ค่าเริ่มต้น)"),
         scheduledAt: z.string().optional().describe("เวลาโพสต์ ISO 8601 เช่น 2026-11-02T19:00:00+02:00 (ไม่ใส่ = ร่าง)"),
       },
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
@@ -124,7 +124,7 @@ export function buildMcpServer(): McpServer {
       inputSchema: {
         date: z.string().optional().describe("YYYY-MM-DD (ไม่ใส่ = วันนี้ เวลา Asia/Jerusalem)"),
         integrationIds: z.array(z.string()).optional().describe("id บัญชีปลายทาง (ไม่ใส่ = ทุกบัญชี)"),
-        privacyStatus: z.enum(PRIVACY_STATUSES).optional().describe("YouTube: private (ค่าเริ่มต้น) | unlisted | public"),
+        privacyStatus: z.enum(PRIVACY_STATUSES).optional().describe("YouTube: private | unlisted | public (ค่าเริ่มต้น)"),
         scheduledAt: z.string().optional().describe("เวลาโพสต์ ISO 8601 (ไม่ใส่ = ร่าง)"),
       },
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },

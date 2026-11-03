@@ -34,7 +34,7 @@ test("facebook publish ไม่มีวิดีโอ → คืน status er
   assert.equal(result.status, "error");
 });
 
-test("youtube publish ส่ง privacyStatus เป็น private โดยค่าเริ่มต้น และใช้ค่าที่ระบุถ้ามี", async () => {
+test("youtube publish ส่ง privacyStatus เป็น public โดยค่าเริ่มต้น และใช้ค่าที่ระบุถ้ามี", async () => {
   const { google } = await import("googleapis");
   const calls: any[] = [];
   const origYoutube = google.youtube;
@@ -59,7 +59,7 @@ test("youtube publish ส่ง privacyStatus เป็น private โดยค�
   }
   {
     assert.equal(calls.length, 2);
-    assert.equal(calls[0].requestBody.status.privacyStatus, "private");
+    assert.equal(calls[0].requestBody.status.privacyStatus, "public");
     assert.equal(calls[1].requestBody.status.privacyStatus, "unlisted");
   }
 });

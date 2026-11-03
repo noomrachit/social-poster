@@ -16,7 +16,7 @@ interface CreatePostBody {
   content: string;
   mediaUrls?: string[];
   integrationIds?: string[]; // ไม่ส่งมา = โพสต์ไปทุกบัญชีที่เชื่อมไว้
-  privacyStatus?: PrivacyStatus; // YouTube: private (ค่าเริ่มต้น) | unlisted | public
+  privacyStatus?: PrivacyStatus; // YouTube: private | unlisted | public (ค่าเริ่มต้น)
   mode?: "now" | "draft" | "schedule"; // ค่าเริ่มต้น now (โพสต์ทันที แบบเดิม)
   scheduledAt?: string; // ISO 8601 ต้องใส่เมื่อ mode = schedule
 }
