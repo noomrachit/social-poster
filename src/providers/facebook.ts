@@ -1,16 +1,66 @@
+import { decryptToken } from "../lib/crypto.js";
+import { FB_GRAPH_VERSION, graphJson, graphUrl } from "../lib/facebook-graph.js";
 import type { IntegrationRow, PublishInput, PublishResult, SocialProvider } from "./types.js";
 
+type FetchLike = typeof fetch;
+
 /**
- * TODO: ยังใช้งานไม่ได้จริง — รอสมัคร Meta Developer App + ผ่าน App Review
- * (permission ที่ต้องขอ: pages_manage_posts, pages_read_engagement เป็นอย่างน้อย)
- * ดู docs/facebook-setup.md
+ * โพสต์วิดีโอลงเพจ Facebook
+ * - ค่าเริ่มต้น: Reels (/{page-id}/video_reels) เหมาะกับคลิปแนวตั้ง 3-90 วินาที
+ * - ถ้า Reels ล้มเหลว (เช่น สัดส่วนหรือความยาวไม่เข้าเงื่อนไข) จะ fallback ไปโพสต์วิดีโอปกติ (/{page-id}/videos ด้วย file_url)
+ * - FB_POST_MODE=video บังคับโพสต์เป็นวิดีโอปกติ
+ * caption ทั้งหมด (content) ใช้เป็น description
  */
+export async function publishReel(pageId: string, token: string, videoUrl: string, description: string, f: FetchLike = fetch): Promise<string> {
+  const start = await graphJson(graphUrl(`${pageId}/video_reels`), {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ upload_phase: "start", access_token: token }),
+  });
+  const videoId: string = start.video_id;
+  if (!videoId) throw new Error("Facebook ไม่ได้ส่ง video_id กลับมา");
+  const upRes = await f(start.upload_url ?? `https://rupload.facebook.com/video-upload/${FB_GRAPH_VERSION}/${videoId}`, {
+    method: "POST",
+    headers: { Authorization: `OAuth ${token}`, file_url: videoUrl },
+  });
+  if (!upRes.ok) throw new Error(`อัปโหลด Reel ไม่สำเร็จ: HTTP ${upRes.status} ${await upRes.text()}`);
+  await graphJson(graphUrl(`${pageId}/video_reels`), {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ upload_phase: "finish", video_id: videoId, video_state: "PUBLISHED", description, access_token: token }),
+  });
+  return videoId;
+}
+
+export async function publishVideo(pageId: string, token: string, videoUrl: string, description: string): Promise<string> {
+  const data = await graphJson(graphUrl(`${pageId}/videos`), {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ file_url: videoUrl, description, access_token: token }),
+  });
+  if (!data.id) throw new Error("Facebook ไม่ได้ส่ง id วิดีโอกลับมา");
+  return data.id;
+}
+
 export const facebookProvider: SocialProvider = {
   platform: "facebook",
-  async publish(_integration: IntegrationRow, _input: PublishInput): Promise<PublishResult> {
-    return {
-      status: "error",
-      errorMessage: "Facebook provider ยังไม่เปิดใช้งาน — ต้องสมัคร Meta App และผ่าน App Review ก่อน (ดู docs/facebook-setup.md)",
-    };
+  async publish(integration: IntegrationRow, input: PublishInput): Promise<PublishResult> {
+    const videoUrl = input.mediaUrls[0];
+    if (!videoUrl) return { status: "error", errorMessage: "Facebook ต้องมีไฟล์วิดีโออย่างน้อย 1 ไฟล์ใน mediaUrls" };
+    try {
+      const token = decryptToken(integration.access_token_enc);
+      const pageId = integration.external_account_id;
+      if (process.env.FB_POST_MODE === "video") {
+        return { status: "success", remotePostId: await publishVideo(pageId, token, videoUrl, input.content) };
+      }
+      try {
+        return { status: "success", remotePostId: await publishReel(pageId, token, videoUrl, input.content) };
+      } catch (reelErr: any) {
+        console.warn(`Facebook Reel ล้มเหลว ลองโพสต์เป็นวิดีโอปกติแทน: ${reelErr?.message ?? reelErr}`);
+        return { status: "success", remotePostId: await publishVideo(pageId, token, videoUrl, input.content) };
+      }
+    } catch (err: any) {
+      return { status: "error", errorMessage: err?.message ?? String(err) };
+    }
   },
 };

@@ -3,6 +3,7 @@ import express from "express";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { authRouter } from "./routes/auth.js";
+import { facebookAuthRouter } from "./routes/facebook-auth.js";
 import { integrationsRouter } from "./routes/integrations.js";
 import { postsRouter } from "./routes/posts.js";
 import { analyticsRouter } from "./routes/analytics.js";
@@ -37,6 +38,7 @@ app.use(["/integrations", "/posts", "/analytics", "/studio-api", "/tts"], requir
 
 // สาธารณะ: OAuth callback (Google เรียก) และ GET /media/:name (แพลตฟอร์มปลายทางดึงไฟล์) — POST /media ล็อกใน router เอง
 app.use(authRouter);
+app.use(facebookAuthRouter);
 app.use(mediaRouter);
 app.use(mcpRouter); // ตรวจสิทธิ์เองใน mcp.ts (Bearer/x-admin-token หรือ MCP_PATH_SECRET)
 app.use(integrationsRouter);

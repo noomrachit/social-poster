@@ -1,16 +1,17 @@
-# สมัคร Facebook Developer App (ยังไม่ implement provider จริง)
+# ตั้งค่า Facebook (เพจ) — Development mode
 
-ขั้นตอนคร่าวๆ สำหรับทีหลัง เมื่อพร้อมจะเปิดใช้ Facebook:
+ถ้าคุณเป็นแอดมินทั้งของ Meta App และของเพจ แอปจะโพสต์ลงเพจได้ทันทีโดยไม่ต้องผ่าน App Review
 
-1. ไปที่ https://developers.facebook.com/apps → สร้างแอปใหม่ ประเภท "Business"
-2. เพิ่ม Product: "Facebook Login" และ (ถ้าจะโพสต์ไป Page) "Pages API"
-3. ขอ permission ต่อไปนี้ผ่าน App Review (ต้องอัดวิดีโอสาธิตการใช้งานจริงส่งให้ Meta ตรวจ ใช้เวลาหลักสัปดาห์ต่อ permission):
-   - `pages_show_list`
-   - `pages_manage_posts`
-   - `pages_read_engagement`
-4. ตั้งค่า OAuth Redirect URI เป็น `${APP_BASE_URL}/auth/facebook/callback`
-5. ใส่ `FACEBOOK_APP_ID` / `FACEBOOK_APP_SECRET` ใน ENV ของ Railway
-6. เขียน `src/routes/auth.ts` เพิ่ม route `/auth/facebook/start` และ `/auth/facebook/callback` (รูปแบบเดียวกับ YouTube)
-7. เขียน `src/providers/facebook.ts` ให้เรียก Graph API `POST /{page-id}/feed` จริง แทน stub ปัจจุบัน
+1. เข้า https://developers.facebook.com/apps → **Create App** → เลือก use case "Other" → ประเภท **Business** → ตั้งชื่อแล้วสร้าง
+2. ในแอป ไปที่ **Add product** → **Facebook Login for Business** (หรือ Facebook Login) → Set up
+3. Facebook Login → **Settings** → ช่อง **Valid OAuth Redirect URIs** ใส่
+   `https://app-production-a4bb.up.railway.app/auth/facebook/callback` แล้ว Save
+4. **App settings → Basic**: คัดลอก **App ID** และ **App Secret** (กด Show) ใส่ App domain เป็น `app-production-a4bb.up.railway.app` และใส่ Privacy Policy URL (ลิงก์อะไรก็ได้ของคุณ)
+5. ปล่อยแอปไว้โหมด **Development** ได้เลย (บัญชีของคุณต้องเป็น Admin ใน App roles)
+6. Railway → service app → **Variables** เพิ่ม `FB_APP_ID`, `FB_APP_SECRET`, `FB_REDIRECT_URI` (ค่าข้างบน) → รอ deploy
+7. เปิด `https://app-production-a4bb.up.railway.app/auth/facebook/start?token=<ADMIN_TOKEN>` (หรือกด "+ เชื่อม Facebook" ในหน้าเว็บ) → ล็อกอิน → **ติ๊กเลือกเพจ** และอนุญาตทุกสิทธิ์
+8. เสร็จแล้วเพจจะขึ้นใน `/integrations` เป็น platform `facebook`
 
-อ้างอิง: https://developers.facebook.com/docs/pages/publishing
+สิทธิ์ที่ขอ: pages_show_list, pages_manage_posts, pages_read_engagement, publish_video
+
+การโพสต์: ใช้ Reels (`/{page-id}/video_reels`, วิดีโอแนวตั้ง 9:16 ยาว 3–90 วินาที) ถ้าไม่ผ่านจะโพสต์เป็นวิดีโอปกติ (`/{page-id}/videos`) อัตโนมัติ ไฟล์ใน mediaUrls ต้องเป็นลิงก์ public

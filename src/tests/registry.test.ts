@@ -20,7 +20,7 @@ test("แต่ละ provider มี platform ตรงกับ key ของ�
   }
 });
 
-test("facebook/tiktok เป็น stub — publish ต้องคืน status error เสมอ (ยังไม่ผ่าน App Review)", async () => {
+test("facebook publish ไม่มีวิดีโอ → คืน status error", async () => {
   const dummyIntegration = {
     id: "x",
     platform: "facebook",

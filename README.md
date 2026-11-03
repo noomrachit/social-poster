@@ -7,7 +7,7 @@
 | แพลตฟอร์ม | สถานะ |
 |---|---|
 | YouTube | ใช้งานได้ (OAuth ของ Google ไม่ต้องรอ review) |
-| Facebook | stub — ต้องสมัคร Meta App + รอ App Review ก่อน ([docs/facebook-setup.md](docs/facebook-setup.md)) |
+| Facebook | ใช้ได้ — โพสต์ Reels/วิดีโอลงเพจ (Development mode ได้ถ้าเป็นแอดมินทั้งแอปและเพจ) ตั้งค่า `FB_APP_ID`, `FB_APP_SECRET`, `FB_REDIRECT_URI` แล้วเปิด `/auth/facebook/start?token=<ADMIN_TOKEN>` ([docs/facebook-setup.md](docs/facebook-setup.md)) |
 | TikTok | stub — ต้องสมัคร TikTok Developer App + รอ App Review ก่อน ([docs/tiktok-setup.md](docs/tiktok-setup.md)) |
 
 เพิ่มแพลตฟอร์มใหม่: implement `SocialProvider` ใน `src/providers/` แล้วเพิ่มเข้า `src/providers/registry.ts`

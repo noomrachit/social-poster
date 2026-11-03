@@ -10,7 +10,7 @@ import { requireAdminQueryOrHeader, tokenMatches } from "../lib/admin-auth.js";
 const STATE_COOKIE = "yt_oauth_state";
 const STATE_MAX_AGE_MS = 10 * 60 * 1000; // 10 นาที
 
-function readCookie(header: string | undefined, name: string): string | undefined {
+export function readCookie(header: string | undefined, name: string): string | undefined {
   if (!header) return undefined;
   for (const part of header.split(";")) {
     const i = part.indexOf("=");
