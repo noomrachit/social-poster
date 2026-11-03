@@ -144,7 +144,7 @@ export type PublishStoredOutcome =
 /** ยิงโพสต์ที่เป็นร่าง/ตั้งเวลาไว้ จองแถวด้วย UPDATE ... WHERE status กันยิงซ้ำ */
 export async function publishStoredPost(postId: string, opts: { onlyIfDue?: boolean } = {}): Promise<PublishStoredOutcome> {
   const { rows } = await pool.query(
-    `UPDATE posts SET status = 'publishing'
+    `UPDATE posts SET status = 'publishing', publishing_started_at = now(), error_message = NULL
      WHERE id = $1 AND status IN ('draft', 'scheduled')
        AND ($2::boolean IS NOT TRUE OR (status = 'scheduled' AND scheduled_at <= now()))
      RETURNING id, content, media_urls, integration_ids, privacy_status`,
@@ -167,7 +167,23 @@ export async function publishStoredPost(postId: string, opts: { onlyIfDue?: bool
 }
 
 /** ยิงโพสต์ตั้งเวลาที่ถึงเวลาแล้ว (ตัวตั้งเวลาใน index.ts เรียกทุกนาที) */
+export const STUCK_PUBLISHING_MINUTES = 15;
+
+/** โพสต์ที่ค้าง 'publishing' นานเกิน 15 นาที (เช่น เซิร์ฟเวอร์รีสตาร์ตกลางคัน) เปลี่ยนเป็น failed */
+export async function failStuckPublishing(minutes = STUCK_PUBLISHING_MINUTES): Promise<number> {
+  const { rowCount } = await pool.query(
+    `UPDATE posts SET status = 'failed',
+       error_message = 'ค้างสถานะ publishing เกิน ' || $1::int || ' นาที (เซิร์ฟเวอร์อาจรีสตาร์ตกลางคัน) — ตรวจปลายทางก่อนโพสต์ซ้ำ'
+     WHERE status = 'publishing'
+       AND COALESCE(publishing_started_at, scheduled_at, created_at) < now() - make_interval(mins => $1::int)`,
+    [minutes]
+  );
+  if (rowCount) console.warn(`scheduler: marked ${rowCount} stuck publishing post(s) as failed`);
+  return rowCount ?? 0;
+}
+
 export async function runDuePosts(limit = 10): Promise<number> {
+  await failStuckPublishing();
   const { rows } = await pool.query(
     `SELECT id FROM posts WHERE status = 'scheduled' AND scheduled_at <= now() ORDER BY scheduled_at LIMIT $1`,
     [limit]

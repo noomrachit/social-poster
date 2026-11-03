@@ -406,7 +406,7 @@ async function loadTargets() {
     if (yt.length === 0) {
       const d = document.createElement("div");
       d.className = "muted";
-      d.textContent = "ยังไม่มีบัญชี YouTube ที่เชื่อมไว้ — เปิด /auth/youtube/start เพื่อเชื่อมก่อน";
+      d.textContent = "ยังไม่มีบัญชี YouTube ที่เชื่อมไว้ — เปิด /auth/youtube/start?token=<ADMIN_TOKEN> เพื่อเชื่อมก่อน";
       box.appendChild(d);
       return;
     }

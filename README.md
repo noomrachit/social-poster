@@ -30,7 +30,10 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 1. สร้าง OAuth client ที่ https://console.cloud.google.com/apis/credentials (ประเภท Web application)
    Redirect URI: `${APP_BASE_URL}/auth/youtube/callback`
-2. เปิด `https://<โดเมนแอป>/auth/youtube/start` ในเบราว์เซอร์ แล้วกดอนุญาต
+2. เปิด `https://<โดเมนแอป>/auth/youtube/start?token=<ADMIN_TOKEN>` ในเบราว์เซอร์ แล้วกดอนุญาต (หรือกด "+ เชื่อม YouTube" ในหน้าเว็บหลังใส่ token) — ไม่มี token จะได้ 401
+   - ตั้ง `ALLOWED_YT_CHANNEL_IDS=UCxxx,UCyyy` เพื่อยอมรับเฉพาะช่องของคุณ (ว่าง = ทุกช่อง)
+   - Health check: `GET /health` คืน `{"ok":true}` หรือ 503 ถ้าต่อฐานข้อมูลไม่ได้ (ตั้งใน Railway → Settings → Healthcheck Path)
+   - โพสต์ที่ค้าง `publishing` เกิน 15 นาทีจะถูกเปลี่ยนเป็น `failed` อัตโนมัติ
 
 ## โพสต์
 

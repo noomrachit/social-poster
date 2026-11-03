@@ -12,11 +12,22 @@ import { studioRouter } from "./routes/studio.js";
 import { mcpRouter } from "./mcp.js";
 import { requireAdmin } from "./lib/admin-auth.js";
 import { runDuePosts } from "./lib/services.js";
+import { pool } from "./db/pool.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 app.use(express.json({ limit: "10mb" }));
+
+// สาธารณะ: health check สำหรับ Railway (ตั้ง Healthcheck Path = /health)
+app.get("/health", async (_req, res) => {
+  try {
+    await pool.query("SELECT 1");
+    res.json({ ok: true });
+  } catch {
+    res.status(503).json({ ok: false });
+  }
+});
 
 // หน้าเว็บสำหรับใช้งาน (ไม่มีข้อมูลลับในหน้านี้ — ข้อมูลทั้งหมดเรียก API ที่ต้องใช้ token)
 app.use(express.static(join(__dirname, "..", "public")));

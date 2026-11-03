@@ -1,16 +1,47 @@
 import { Router } from "express";
+import { randomBytes } from "node:crypto";
 import { nanoid } from "nanoid";
 import { google } from "googleapis";
 import { createGoogleOAuthClient, YOUTUBE_SCOPES } from "../lib/google-oauth.js";
 import { encryptToken } from "../lib/crypto.js";
 import { pool } from "../db/pool.js";
+import { requireAdminQueryOrHeader, tokenMatches } from "../lib/admin-auth.js";
+
+const STATE_COOKIE = "yt_oauth_state";
+const STATE_MAX_AGE_MS = 10 * 60 * 1000; // 10 นาที
+
+function readCookie(header: string | undefined, name: string): string | undefined {
+  if (!header) return undefined;
+  for (const part of header.split(";")) {
+    const i = part.indexOf("=");
+    if (i < 0) continue;
+    if (part.slice(0, i).trim() === name) return decodeURIComponent(part.slice(i + 1).trim());
+  }
+  return undefined;
+}
+
+/** ALLOWED_YT_CHANNEL_IDS=UCxxx,UCyyy (ว่าง = อนุญาตทุกช่อง) */
+export function isChannelAllowed(channelId: string, env = process.env.ALLOWED_YT_CHANNEL_IDS): boolean {
+  const list = (env ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  return list.length === 0 || list.includes(channelId);
+}
 
 export const authRouter = Router();
 
 // ขั้นที่ 1: เปิดหน้านี้ในเบราว์เซอร์เพื่อเริ่มเชื่อม YouTube
-authRouter.get("/auth/youtube/start", (_req, res) => {
+// ต้องใช้ ADMIN_TOKEN: /auth/youtube/start?token=<ADMIN_TOKEN> (หรือ header x-admin-token)
+authRouter.get("/auth/youtube/start", requireAdminQueryOrHeader, (_req, res) => {
+  const state = randomBytes(32).toString("hex");
+  res.cookie(STATE_COOKIE, state, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production" || (process.env.APP_BASE_URL ?? "").startsWith("https://"),
+    maxAge: STATE_MAX_AGE_MS,
+    path: "/auth/youtube",
+  });
   const client = createGoogleOAuthClient();
   const url = client.generateAuthUrl({
+    state,
     access_type: "offline", // ต้องได้ refresh_token กลับมา
     prompt: "consent",
     scope: YOUTUBE_SCOPES,
@@ -21,6 +52,13 @@ authRouter.get("/auth/youtube/start", (_req, res) => {
 // ขั้นที่ 2: Google เรียกกลับมาที่นี่หลังผู้ใช้กดอนุญาต
 authRouter.get("/auth/youtube/callback", async (req, res) => {
   const code = req.query.code as string | undefined;
+  const state = typeof req.query.state === "string" ? req.query.state : "";
+  const expectedState = readCookie(req.headers.cookie, STATE_COOKIE) ?? "";
+  res.clearCookie(STATE_COOKIE, { path: "/auth/youtube" });
+  if (!state || !expectedState || !tokenMatches(state, expectedState)) {
+    res.status(400).send("state ไม่ตรงหรือหมดอายุ — เริ่มใหม่ที่ /auth/youtube/start?token=<ADMIN_TOKEN>");
+    return;
+  }
   if (!code) {
     res.status(400).send("Missing code");
     return;
@@ -40,6 +78,10 @@ authRouter.get("/auth/youtube/callback", async (req, res) => {
     const channel = channelRes.data.items?.[0];
     if (!channel?.id) {
       res.status(400).send("หาช่อง YouTube ของบัญชีนี้ไม่เจอ");
+      return;
+    }
+    if (!isChannelAllowed(channel.id)) {
+      res.status(403).send(`ช่อง ${channel.id} ไม่อยู่ใน ALLOWED_YT_CHANNEL_IDS — ไม่ได้บันทึก`);
       return;
     }
 

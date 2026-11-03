@@ -41,6 +41,8 @@ ALTER TABLE posts ADD COLUMN IF NOT EXISTS scheduled_at TIMESTAMPTZ;
 ALTER TABLE posts ADD COLUMN IF NOT EXISTS integration_ids JSONB;      -- ปลายทางที่เลือกไว้ (null = ทุกบัญชี)
 ALTER TABLE posts ADD COLUMN IF NOT EXISTS privacy_status TEXT;        -- YouTube: private | unlisted | public
 ALTER TABLE posts ADD COLUMN IF NOT EXISTS source TEXT;                -- ที่มา เช่น 'yingad:2026-10-19'
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS publishing_started_at TIMESTAMPTZ; -- เวลาเริ่มยิง ใช้จับโพสต์ค้าง 'publishing'
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS error_message TEXT;          -- เหตุผลที่ล้มเหลวระดับโพสต์
 CREATE INDEX IF NOT EXISTS idx_posts_due ON posts(scheduled_at) WHERE status = 'scheduled';
 
 CREATE INDEX IF NOT EXISTS idx_post_results_post_id ON post_results(post_id);

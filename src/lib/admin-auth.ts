@@ -10,13 +10,31 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction): v
     return;
   }
 
-  const provided = req.header("x-admin-token") ?? "";
+  if (!tokenMatches(req.header("x-admin-token") ?? "", expected)) {
+    res.status(401).json({ error: "token ไม่ถูกต้อง" });
+    return;
+  }
+  next();
+}
+
+/** เทียบ token แบบ constant-time */
+export function tokenMatches(provided: string, expected: string): boolean {
   const a = Buffer.from(provided);
   const b = Buffer.from(expected);
-  const ok = a.length === b.length && timingSafeEqual(a, b);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
 
-  if (!ok) {
-    res.status(401).json({ error: "token ไม่ถูกต้อง" });
+// สำหรับหน้าที่เปิดในเบราว์เซอร์ (เช่น /auth/youtube/start) รับ token ได้ทั้ง header x-admin-token และ ?token=
+export function requireAdminQueryOrHeader(req: Request, res: Response, next: NextFunction): void {
+  const expected = process.env.ADMIN_TOKEN;
+  if (!expected) {
+    res.status(500).send("ADMIN_TOKEN ยังไม่ได้ตั้งค่าบนเซิร์ฟเวอร์");
+    return;
+  }
+  const q = req.query?.token;
+  const provided = req.header("x-admin-token") ?? (typeof q === "string" ? q : "");
+  if (!tokenMatches(provided, expected)) {
+    res.status(401).send("token ไม่ถูกต้อง — เปิด /auth/youtube/start?token=<ADMIN_TOKEN>");
     return;
   }
   next();
