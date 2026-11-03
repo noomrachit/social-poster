@@ -1,6 +1,6 @@
 // Helper เรียก Meta Graph API (ใช้ fetch ของ Node ล้วน ไม่มี dependency เพิ่ม)
 export const FB_GRAPH_VERSION = process.env.FB_GRAPH_VERSION || "v21.0";
-export const FB_SCOPES = ["pages_show_list", "pages_manage_posts", "pages_read_engagement", "publish_video"];
+export const FB_SCOPES = ["pages_show_list", "pages_manage_posts", "pages_read_engagement"];
 
 export function graphUrl(path: string, params: Record<string, string> = {}): string {
   const u = new URL(`https://graph.facebook.com/${FB_GRAPH_VERSION}/${path.replace(/^\//, "")}`);

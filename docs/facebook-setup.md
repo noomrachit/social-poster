@@ -12,6 +12,6 @@
 7. เปิด `https://app-production-a4bb.up.railway.app/auth/facebook/start?token=<ADMIN_TOKEN>` (หรือกด "+ เชื่อม Facebook" ในหน้าเว็บ) → ล็อกอิน → **ติ๊กเลือกเพจ** และอนุญาตทุกสิทธิ์
 8. เสร็จแล้วเพจจะขึ้นใน `/integrations` เป็น platform `facebook`
 
-สิทธิ์ที่ขอ: pages_show_list, pages_manage_posts, pages_read_engagement, publish_video
+สิทธิ์ที่ขอ: pages_show_list, pages_manage_posts, pages_read_engagement
 
 การโพสต์: ใช้ Reels (`/{page-id}/video_reels`, วิดีโอแนวตั้ง 9:16 ยาว 3–90 วินาที) ถ้าไม่ผ่านจะโพสต์เป็นวิดีโอปกติ (`/{page-id}/videos`) อัตโนมัติ ไฟล์ใน mediaUrls ต้องเป็นลิงก์ public

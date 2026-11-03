@@ -18,7 +18,7 @@ test("auth url มี scope, state, redirect ครบ", () => {
   assert.equal(u.searchParams.get("state"), "st");
   assert.equal(u.searchParams.get("redirect_uri"), "https://x.test/auth/facebook/callback");
   assert.deepEqual(u.searchParams.get("scope")!.split(","), FB_SCOPES);
-  assert.ok(FB_SCOPES.includes("publish_video"));
+  assert.ok(!FB_SCOPES.includes("publish_video"));
 });
 
 test("ALLOWED_FB_PAGE_IDS", () => {
