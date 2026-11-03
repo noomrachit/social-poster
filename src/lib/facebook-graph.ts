@@ -62,5 +62,14 @@ export async function exchangeCodeForPages(code: string): Promise<FbPage[]> {
     for (const p of data.data ?? []) if (p.id && p.access_token) pages.push(p);
     next = data.paging?.next;
   }
+  // บางเพจ (เพจแบบใหม่/อยู่ใน Business) ไม่โผล่ใน me/accounts → ดึงตรงจาก ID ใน ALLOWED_FB_PAGE_IDS
+  const wanted = (process.env.ALLOWED_FB_PAGE_IDS ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+  for (const id of wanted) {
+    if (pages.some((p) => p.id === id)) continue;
+    try {
+      const p: any = await graphJson(graphUrl(id, { access_token: long.access_token, fields: "id,name,access_token" }));
+      if (p.id && p.access_token) pages.push(p);
+    } catch { /* ข้ามเพจที่ไม่มีสิทธิ์ */ }
+  }
   return pages;
 }
