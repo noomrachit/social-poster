@@ -11,6 +11,7 @@ import { ttsRouter } from "./routes/tts.js";
 import { mediaRouter } from "./routes/media.js";
 import { studioRouter } from "./routes/studio.js";
 import { legalRouter } from "./routes/legal.js";
+import { tiktokAuthRouter } from "./routes/tiktok-auth.js";
 import { mcpRouter } from "./mcp.js";
 import { requireAdmin } from "./lib/admin-auth.js";
 import { runDuePosts } from "./lib/services.js";
@@ -43,6 +44,7 @@ app.use(["/integrations", "/posts", "/analytics", "/studio-api", "/tts"], requir
 // สาธารณะ: OAuth callback (Google เรียก) และ GET /media/:name (แพลตฟอร์มปลายทางดึงไฟล์) — POST /media ล็อกใน router เอง
 app.use(authRouter);
 app.use(facebookAuthRouter);
+app.use(tiktokAuthRouter);
 app.use(mediaRouter);
 app.use(mcpRouter); // ตรวจสิทธิ์เองใน mcp.ts (Bearer/x-admin-token หรือ MCP_PATH_SECRET)
 app.use(integrationsRouter);

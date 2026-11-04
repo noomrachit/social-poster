@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { pool } from "../db/pool.js";
+import { decryptToken, revokeToken } from "../lib/tiktok.js";
 
 // การล็อก token ทำใน src/index.ts (ครอบเฉพาะ /integrations) ไม่ใช้ router.use เพราะจะครอบทุกเส้นทางที่ mount ทีหลัง
 export const integrationsRouter = Router();
@@ -14,7 +15,12 @@ integrationsRouter.get("/integrations", async (_req, res) => {
 });
 
 // ยกเลิกการเชื่อมบัญชี (ลบ integration ทิ้ง — post_results เก่าที่อ้างถึงจะถูกลบตามด้วย ON DELETE CASCADE)
+// token (access/refresh) อยู่ในแถว integrations จึงถูกลบไปพร้อมกัน; TikTok ยกเลิกสิทธิ์ที่ต้นทางด้วย (best effort)
 integrationsRouter.delete("/integrations/:id", async (req, res) => {
+  const pre = await pool.query(`SELECT platform, access_token_enc FROM integrations WHERE id = $1`, [req.params.id]);
+  if (pre.rows[0]?.platform === "tiktok") {
+    try { await revokeToken(decryptToken(pre.rows[0].access_token_enc)); } catch (e) { console.error("TikTok revoke failed"); }
+  }
   const { rows } = await pool.query(
     `DELETE FROM integrations WHERE id = $1 RETURNING id, platform, display_name`,
     [req.params.id]
