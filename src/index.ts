@@ -10,6 +10,7 @@ import { analyticsRouter } from "./routes/analytics.js";
 import { ttsRouter } from "./routes/tts.js";
 import { mediaRouter } from "./routes/media.js";
 import { studioRouter } from "./routes/studio.js";
+import { legalRouter } from "./routes/legal.js";
 import { mcpRouter } from "./mcp.js";
 import { requireAdmin } from "./lib/admin-auth.js";
 import { runDuePosts } from "./lib/services.js";
@@ -29,6 +30,9 @@ app.get("/health", async (_req, res) => {
     res.status(503).json({ ok: false });
   }
 });
+
+// สาธารณะ: Terms/Privacy และไฟล์ยืนยันโดเมน TikTok
+app.use(legalRouter);
 
 // หน้าเว็บสำหรับใช้งาน (ไม่มีข้อมูลลับในหน้านี้ — ข้อมูลทั้งหมดเรียก API ที่ต้องใช้ token)
 app.use(express.static(join(__dirname, "..", "public")));
