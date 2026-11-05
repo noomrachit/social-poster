@@ -15,7 +15,7 @@ import {
 } from "./types.js";
 
 // หน้าสตูดิโอ: สร้างสคริปต์ -> เล่น/อัดคลิปในเบราว์เซอร์ (canvas + MediaRecorder) -> อัปโหลด POST /media -> POST /posts
-// token เก็บใน sessionStorage คีย์เดียวกับหน้าโพสต์ (index.html) ไม่มีความลับฝังในโค้ด
+// token เก็บใน sessionStorage คีย์เดียวกับหน้าโพสต์ (app.html) ไม่มีความลับฝังในโค้ด
 
 const TOKEN_KEY = "social-poster-admin-token";
 const EXAMPLES = ["นอนดึกแล้วงานพัง", "กาแฟท้องว่าง", "เก็บเงินเดือนละพัน"];
