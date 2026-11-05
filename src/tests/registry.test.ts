@@ -46,9 +46,14 @@ test("youtube publish ส่ง privacyStatus เป็น public โดยค�
   process.env.GOOGLE_CLIENT_SECRET ??= "test-secret";
   process.env.APP_BASE_URL ??= "http://localhost";
   const { encryptToken } = await import("../lib/crypto.js");
+  const { pool } = await import("../db/pool.js");
+  const origQuery = pool.query;
+  const origRefresh = google.auth.OAuth2.prototype.refreshAccessToken;
+  (pool as any).query = async () => ({ rows: [] });
+  (google.auth.OAuth2.prototype as any).refreshAccessToken = async () => ({ credentials: { access_token: "new", expiry_date: Date.now() + 3600e3 } });
   const integration = {
     id: "x", platform: "youtube", display_name: "x", external_account_id: "x",
-    access_token_enc: encryptToken("tok"), refresh_token_enc: null, token_expires_at: null,
+    access_token_enc: encryptToken("tok"), refresh_token_enc: encryptToken("rt"), token_expires_at: null,
   };
   try {
     await providers.youtube.publish(integration, { content: "t", mediaUrls: ["http://x/v.mp4"] });
@@ -56,6 +61,8 @@ test("youtube publish ส่ง privacyStatus เป็น public โดยค�
   } finally {
     (google as any).youtube = origYoutube;
     globalThis.fetch = origFetch;
+    (pool as any).query = origQuery;
+    (google.auth.OAuth2.prototype as any).refreshAccessToken = origRefresh;
   }
   {
     assert.equal(calls.length, 2);

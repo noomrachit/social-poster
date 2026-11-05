@@ -1,14 +1,20 @@
-# สมัคร TikTok Developer App (ยังไม่ implement provider จริง)
+# TikTok setup status (2026-11-04)
 
-ขั้นตอนคร่าวๆ สำหรับทีหลัง เมื่อพร้อมจะเปิดใช้ TikTok:
+## Done
+- TikTok developer app "social-poster" created (ID 7704141490188077076), Individual, status Draft.
+- Products: Login Kit + Content Posting API (Direct Post on). Scopes: user.info.basic, video.upload, video.publish.
+- Redirect URI: https://app-production-a4bb.up.railway.app/auth/tiktok/callback
+- Web URL: https://app-production-a4bb.up.railway.app/
+- Terms: /terms, Privacy: /privacy (src/routes/legal.ts). Category: Entertainment. Icon: 1024x1024 PNG.
+- URL prefix https://app-production-a4bb.up.railway.app/ verified via signature file
+  (served from env TIKTOK_VERIFY_FILENAME / TIKTOK_VERIFY_CONTENT).
+- Code: /auth/tiktok/start (PKCE), /auth/tiktok/callback, token refresh, src/providers/tiktok.ts
+  (creator_info -> video/init FILE_UPLOAD chunked -> status poll), revoke on disconnect,
+  dashboard button "+ เชื่อม TikTok". 55 tests pass.
+- Railway env set: TIKTOK_CLIENT_KEY, TIKTOK_CLIENT_SECRET, TIKTOK_VERIFY_FILENAME, TIKTOK_VERIFY_CONTENT.
 
-1. ไปที่ https://developers.tiktok.com/apps → สร้างแอปใหม่
-2. เปิดใช้ Product: "Content Posting API"
-3. ขอ scope `video.publish` ผ่าน App Review (ต้องมีบัญชี TikTok Business และรอการตรวจ)
-4. ตั้งค่า OAuth Redirect URI เป็น `${APP_BASE_URL}/auth/tiktok/callback`
-5. ใส่ `TIKTOK_CLIENT_KEY` / `TIKTOK_CLIENT_SECRET` ใน ENV ของ Railway
-6. เขียน `src/routes/auth.ts` เพิ่ม route `/auth/tiktok/start` และ `/auth/tiktok/callback`
-7. เขียน `src/providers/tiktok.ts` ให้เรียก Content Posting API จริง (`/v2/post/publish/video/init/`) แทน stub ปัจจุบัน
-   - หมายเหตุ: TikTok ต้องอัปโหลดไฟล์วิดีโอเป็น chunk ไม่ใช่ URL ตรงแบบ YouTube
-
-อ้างอิง: https://developers.tiktok.com/doc/content-posting-api-get-started
+## Pending
+- Production app form not saved: TikTok requires a demo video before Save/Submit.
+- Trying Sandbox mode to connect "pora" and test-post (SELF_ONLY until audited).
+- Record demo video (login + post flow), upload, Save, then Submit for review (user approves submit).
+- If login rejects code_challenge, switch PKCE challenge from hex to base64url.

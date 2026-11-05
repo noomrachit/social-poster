@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { pool } from "../db/pool.js";
-import { createDraft, createPost, importYingad, listPosts, publishStoredPost } from "../lib/services.js";
+import { cancelPost, createDraft, createPost, deletePost, importYingad, listPosts, publishStoredPost, updatePost } from "../lib/services.js";
 import { parseScheduledAt } from "../lib/schedule.js";
 import { PRIVACY_STATUSES, type PrivacyStatus } from "../providers/types.js";
 
@@ -122,3 +122,45 @@ postsRouter.post("/posts/import/yingad", async (req, res) => {
     res.status(502).json({ error: err instanceof Error ? err.message : String(err) });
   }
 });
+
+// POST /posts/:id/cancel — ยกเลิกโพสต์ร่าง/ตั้งเวลา
+postsRouter.post("/posts/:id/cancel", async (req, res) => {
+  const out = await cancelPost(req.params.id);
+  if (out.ok) { res.json(out.post); return; }
+  if (out.reason === "not_found") res.status(404).json({ error: "not found" });
+  else res.status(409).json({ error: `โพสต์นี้สถานะ ${out.status} ยกเลิกไม่ได้ (ยกเลิกได้เฉพาะ draft/scheduled)` });
+});
+
+// DELETE /posts/:id — ลบโพสต์ออกจากแอป (ไม่ลบคลิปที่ขึ้นแพลตฟอร์มไปแล้ว)
+postsRouter.delete("/posts/:id", async (req, res) => {
+  const out = await deletePost(req.params.id);
+  if (out.ok) { res.json({ deleted: out.deleted }); return; }
+  if (out.reason === "not_found") res.status(404).json({ error: "not found" });
+  else res.status(409).json({ error: "กำลังโพสต์อยู่ ลบไม่ได้" });
+});
+
+// PATCH /posts/:id (หรือ POST /posts/:id/media) — เปลี่ยน mediaUrls / content / scheduledAt
+postsRouter.patch("/posts/:id", updateHandler);
+postsRouter.post("/posts/:id/media", updateHandler);
+async function updateHandler(req: any, res: any) {
+  const body = (req.body ?? {}) as { mediaUrls?: unknown; content?: unknown; scheduledAt?: unknown };
+  if (body.mediaUrls !== undefined && (!Array.isArray(body.mediaUrls) || body.mediaUrls.length === 0 || !body.mediaUrls.every((u) => typeof u === "string" && u))) {
+    res.status(400).json({ error: "mediaUrls must be a non-empty array of strings" }); return;
+  }
+  if (body.content !== undefined && (typeof body.content !== "string" || !body.content)) {
+    res.status(400).json({ error: "content must be a non-empty string" }); return;
+  }
+  let scheduledAt: Date | undefined;
+  if (body.scheduledAt !== undefined) {
+    const parsed = parseScheduledAt(body.scheduledAt);
+    if (typeof parsed === "string") { res.status(400).json({ error: parsed }); return; }
+    scheduledAt = parsed;
+  }
+  if (body.mediaUrls === undefined && body.content === undefined && !scheduledAt) {
+    res.status(400).json({ error: "ต้องส่ง mediaUrls, content หรือ scheduledAt อย่างน้อย 1 อย่าง" }); return;
+  }
+  const out = await updatePost(req.params.id, { mediaUrls: body.mediaUrls as string[] | undefined, content: body.content as string | undefined, scheduledAt });
+  if (out.ok) { res.json(out.post); return; }
+  if (out.reason === "not_found") res.status(404).json({ error: "not found" });
+  else res.status(409).json({ error: `โพสต์นี้สถานะ ${out.status} แก้ไม่ได้` });
+}

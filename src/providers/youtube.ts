@@ -3,6 +3,7 @@ import { google } from "googleapis";
 import { createGoogleOAuthClient } from "../lib/google-oauth.js";
 import { decryptToken, encryptToken } from "../lib/crypto.js";
 import { pool } from "../db/pool.js";
+import { markNeedsReauth } from "../lib/reauth.js";
 import type { IntegrationRow, PostStats, PublishInput, PublishResult, SocialProvider } from "./types.js";
 
 function buildAuth(integration: IntegrationRow) {
@@ -10,6 +11,8 @@ function buildAuth(integration: IntegrationRow) {
   auth.setCredentials({
     access_token: decryptToken(integration.access_token_enc),
     refresh_token: integration.refresh_token_enc ? decryptToken(integration.refresh_token_enc) : undefined,
+    // ต้องใส่ expiry_date ไม่งั้น lib คิดว่า token ยังใช้ได้และไม่ refresh (ไม่รู้ = ถือว่าหมดอายุ)
+    expiry_date: integration.token_expires_at ? new Date(integration.token_expires_at).getTime() : 1,
   });
 
   // googleapis รีเฟรช access_token ให้อัตโนมัติเมื่อหมดอายุ (ใช้ refresh_token) แต่ของใหม่
@@ -36,6 +39,34 @@ function buildAuth(integration: IntegrationRow) {
       });
   });
   return auth;
+}
+
+export class ReauthRequiredError extends Error {}
+
+/**
+ * บังคับ refresh access token ด้วย refresh_token ก่อนอัปโหลดทุกครั้ง แล้วบันทึกลง DB
+ * (อัปโหลดเป็น stream → google-auth-library จะไม่ refresh+retry ให้เมื่อเจอ 401)
+ */
+export async function refreshAndPersist(auth: { refreshAccessToken: () => Promise<{ credentials: any }> }, integration: IntegrationRow, db: { query: (...a: any[]) => Promise<any> } = pool) {
+  if (!integration.refresh_token_enc) throw new ReauthRequiredError("ไม่มี refresh_token — ต้องเชื่อม YouTube ใหม่ที่ /auth/youtube/start");
+  let creds: any;
+  try {
+    ({ credentials: creds } = await auth.refreshAccessToken());
+  } catch (e: any) {
+    const code = e?.response?.data?.error ?? e?.message;
+    if (/invalid_grant|unauthorized_client|invalid_client/.test(String(code))) {
+      throw new ReauthRequiredError(`refresh token ใช้ไม่ได้ (${code}) — ต้องเชื่อม YouTube ใหม่ (ถ้าแอป Google ยังเป็น Testing token จะหมดทุก 7 วัน)`);
+    }
+    throw e;
+  }
+  if (!creds?.access_token) throw new Error("Google ไม่ส่ง access_token ใหม่กลับมา");
+  await db.query(
+    `UPDATE integrations SET access_token_enc = $1, refresh_token_enc = COALESCE($2, refresh_token_enc),
+       token_expires_at = $3, needs_reauth = false, last_error = NULL, updated_at = now() WHERE id = $4`,
+    [encryptToken(creds.access_token), creds.refresh_token ? encryptToken(creds.refresh_token) : null,
+     creds.expiry_date ? new Date(creds.expiry_date) : null, integration.id]
+  );
+  return creds;
 }
 
 /**
@@ -74,6 +105,7 @@ export const youtubeProvider: SocialProvider = {
 
     try {
       const auth = buildAuth(integration);
+      await refreshAndPersist(auth, integration);
 
       const youtube = google.youtube({ version: "v3", auth });
 
@@ -109,7 +141,12 @@ export const youtubeProvider: SocialProvider = {
 
       return { status: "success", remotePostId: res.data.id ?? undefined };
     } catch (err: any) {
-      return { status: "error", errorMessage: err?.message ?? String(err) };
+      const msg = err?.message ?? String(err);
+      if (err instanceof ReauthRequiredError || err?.code === 401 || err?.response?.status === 401) {
+        await markNeedsReauth(integration.id, msg);
+        return { status: "error", errorMessage: `YouTube ต้องเชื่อมใหม่: ${msg}` };
+      }
+      return { status: "error", errorMessage: msg };
     }
   },
 };

@@ -7,7 +7,7 @@ import { fetchDailyPick, isDate, parseDailyPick, todayIn, toYoutubeContent } fro
 
 export async function listIntegrations() {
   const { rows } = await pool.query(
-    `SELECT id, platform, display_name, external_account_id, created_at
+    `SELECT id, platform, display_name, external_account_id, created_at, updated_at, needs_reauth, last_error
      FROM integrations ORDER BY created_at DESC`
   );
   return rows;
@@ -38,7 +38,7 @@ export interface CreatePostOutcome {
   results: Array<{ integration?: string; platform?: string; status: "success" | "error"; postId?: string; error?: string }>;
 }
 
-export const POST_STATUSES = ["published", "draft", "scheduled", "publishing", "failed"] as const;
+export const POST_STATUSES = ["published", "draft", "scheduled", "publishing", "failed", "cancelled"] as const;
 export type PostStatus = (typeof POST_STATUSES)[number];
 
 async function findIntegrations(integrationIds?: string[] | null): Promise<IntegrationRow[]> {
@@ -298,4 +298,45 @@ export async function importYingad(opts: {
   });
   if (!draft) return { ok: false, error: "ไม่มีบัญชีที่เชื่อมไว้ตรงกับที่ขอ (ดู GET /integrations)" };
   return { ok: true, ...draft, product: pick.product, duplicate: false };
+}
+
+type Db = { query: (text: string, params?: any[]) => Promise<{ rows: any[] }> };
+
+/** ยกเลิกโพสต์ที่ยังไม่ได้ยิง (draft/scheduled) → status cancelled (scheduler จะไม่หยิบ) */
+export async function cancelPost(id: string, db: Db = pool) {
+  const { rows } = await db.query(
+    `UPDATE posts SET status = 'cancelled' WHERE id = $1 AND status IN ('draft', 'scheduled') RETURNING id, status`, [id]);
+  if (rows[0]) return { ok: true as const, post: rows[0] };
+  const { rows: ex } = await db.query(`SELECT status FROM posts WHERE id = $1`, [id]);
+  return { ok: false as const, reason: ex[0] ? "not_cancellable" as const : "not_found" as const, status: ex[0]?.status };
+}
+
+/** ลบโพสต์ (ลบ post_results ด้วย CASCADE) ห้ามลบระหว่าง publishing; ไม่ลบโพสต์ที่ขึ้นแพลตฟอร์มไปแล้ว */
+export async function deletePost(id: string, db: Db = pool) {
+  const { rows } = await db.query(`DELETE FROM posts WHERE id = $1 AND status <> 'publishing' RETURNING id`, [id]);
+  if (rows[0]) return { ok: true as const, deleted: rows[0].id };
+  const { rows: ex } = await db.query(`SELECT status FROM posts WHERE id = $1`, [id]);
+  return { ok: false as const, reason: ex[0] ? "publishing" as const : "not_found" as const };
+}
+
+/**
+ * เปลี่ยนคลิป/แคปชัน/เวลา ของโพสต์ draft/scheduled (หรือ failed/cancelled เพื่อตั้งใหม่)
+ * ใส่ scheduledAt = ตั้งเวลาใหม่ (status scheduled); ไม่ใส่และเดิมเป็น failed/cancelled → กลับเป็น draft
+ */
+export async function updatePost(id: string, patch: { mediaUrls?: string[]; content?: string; scheduledAt?: Date }, db: Db = pool) {
+  const { rows } = await db.query(
+    `UPDATE posts SET
+       media_urls = COALESCE($2::jsonb, media_urls),
+       content = COALESCE($3, content),
+       scheduled_at = COALESCE($4, scheduled_at),
+       status = CASE WHEN $4::timestamptz IS NOT NULL THEN 'scheduled'
+                     WHEN status IN ('failed', 'cancelled') THEN 'draft' ELSE status END,
+       error_message = NULL
+     WHERE id = $1 AND status IN ('draft', 'scheduled', 'failed', 'cancelled')
+     RETURNING id, status, content, media_urls, scheduled_at`,
+    [id, patch.mediaUrls ? JSON.stringify(patch.mediaUrls) : null, patch.content ?? null, patch.scheduledAt ?? null]
+  );
+  if (rows[0]) return { ok: true as const, post: rows[0] };
+  const { rows: ex } = await db.query(`SELECT status FROM posts WHERE id = $1`, [id]);
+  return { ok: false as const, reason: ex[0] ? "not_editable" as const : "not_found" as const, status: ex[0]?.status };
 }

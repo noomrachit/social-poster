@@ -8,6 +8,11 @@ export const YOUTUBE_SCOPES = [
   "https://www.googleapis.com/auth/youtube.readonly",
 ];
 
+/** พารามิเตอร์หน้าขอสิทธิ์: offline + consent เพื่อให้ Google ส่ง refresh_token ทุกครั้งที่เชื่อม */
+export function youtubeAuthUrlOptions(state: string) {
+  return { state, access_type: "offline" as const, prompt: "consent", include_granted_scopes: true, scope: YOUTUBE_SCOPES };
+}
+
 export function createGoogleOAuthClient() {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;

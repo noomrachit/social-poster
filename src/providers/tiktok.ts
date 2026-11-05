@@ -88,10 +88,13 @@ export function createTiktokProvider(deps: Deps = defaultDeps): SocialProvider {
     async publish(integration: IntegrationRow, input: PublishInput & { tiktokPrivacy?: string }): Promise<PublishResult> {
       const videoUrl = input.mediaUrls[0];
       if (!videoUrl) return { status: "error", errorMessage: "TikTok ต้องมีไฟล์วิดีโอ 1 ไฟล์ใน mediaUrls" };
+      let creatorSummary = "";
       try {
         const token = await getAccessToken(integration, deps);
         const creator = await api(deps, token, "/v2/post/publish/creator_info/query/", {});
         const allowed: string[] = creator.privacy_level_options ?? [];
+        creatorSummary = `creator_username=${creator.creator_username ?? ""} creator_nickname=${creator.creator_nickname ?? ""} privacy_level_options=${JSON.stringify(allowed)}`;
+        console.log(`[tiktok] creator_info ${creatorSummary}`);
         const privacy = choosePrivacy(input.tiktokPrivacy ?? mapPrivacy(input.privacyStatus), allowed);
 
         const vr = await deps.fetch(videoUrl);
@@ -138,7 +141,8 @@ export function createTiktokProvider(deps: Deps = defaultDeps): SocialProvider {
         // ยังประมวลผลอยู่ ถือว่าส่งสำเร็จ (SELF_ONLY มักไม่มี post id สาธารณะ)
         return { status: "success", remotePostId: publishId };
       } catch (err: any) {
-        return { status: "error", errorMessage: err?.message ?? String(err) };
+        const msg = err?.message ?? String(err);
+        return { status: "error", errorMessage: creatorSummary ? `${msg} [${creatorSummary}]` : msg };
       }
     },
   };

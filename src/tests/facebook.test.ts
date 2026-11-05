@@ -39,8 +39,9 @@ test("Reel flow: start → upload(file_url) → finish พร้อม descripti
   const calls: { url: string; init: any }[] = [];
   const orig = globalThis.fetch;
   globalThis.fetch = (async (url: any, init: any) => {
-    calls.push({ url: String(url), init });
     const s = String(url);
+    if (s.includes("debug_token")) return new Response(JSON.stringify({ data: { is_valid: true } }));
+    calls.push({ url: String(url), init });
     if (s.includes("rupload")) return new Response(JSON.stringify({ success: true }));
     const body = JSON.parse(init.body);
     if (body.upload_phase === "start") return new Response(JSON.stringify({ video_id: "V1", upload_url: "https://rupload.facebook.com/video-upload/v21.0/V1" }));

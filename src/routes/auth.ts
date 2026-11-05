@@ -2,7 +2,7 @@ import { Router } from "express";
 import { randomBytes } from "node:crypto";
 import { nanoid } from "nanoid";
 import { google } from "googleapis";
-import { createGoogleOAuthClient, YOUTUBE_SCOPES } from "../lib/google-oauth.js";
+import { createGoogleOAuthClient, youtubeAuthUrlOptions } from "../lib/google-oauth.js";
 import { encryptToken } from "../lib/crypto.js";
 import { pool } from "../db/pool.js";
 import { requireAdminQueryOrHeader, tokenMatches } from "../lib/admin-auth.js";
@@ -40,12 +40,7 @@ authRouter.get("/auth/youtube/start", requireAdminQueryOrHeader, (_req, res) => 
     path: "/auth/youtube",
   });
   const client = createGoogleOAuthClient();
-  const url = client.generateAuthUrl({
-    state,
-    access_type: "offline", // ต้องได้ refresh_token กลับมา
-    prompt: "consent",
-    scope: YOUTUBE_SCOPES,
-  });
+  const url = client.generateAuthUrl(youtubeAuthUrlOptions(state)); // offline + consent → ได้ refresh_token
   res.redirect(url);
 });
 
@@ -86,7 +81,7 @@ authRouter.get("/auth/youtube/callback", async (req, res) => {
     }
 
     const id = nanoid();
-    await pool.query(
+    const saved = await pool.query(
       `INSERT INTO integrations (id, platform, display_name, external_account_id, access_token_enc, refresh_token_enc, token_expires_at)
        VALUES ($1, 'youtube', $2, $3, $4, $5, $6)
        ON CONFLICT (platform, external_account_id) DO UPDATE
@@ -94,7 +89,10 @@ authRouter.get("/auth/youtube/callback", async (req, res) => {
            access_token_enc = EXCLUDED.access_token_enc,
            refresh_token_enc = COALESCE(EXCLUDED.refresh_token_enc, integrations.refresh_token_enc),
            token_expires_at = EXCLUDED.token_expires_at,
-           updated_at = now()`,
+           needs_reauth = false,
+           last_error = NULL,
+           updated_at = now()
+       RETURNING id, (refresh_token_enc IS NOT NULL) AS has_refresh`,
       [
         id,
         channel.snippet?.title ?? "YouTube channel",
@@ -105,7 +103,11 @@ authRouter.get("/auth/youtube/callback", async (req, res) => {
       ]
     );
 
-    res.send(`เชื่อมช่อง YouTube "${channel.snippet?.title}" สำเร็จแล้ว ปิดหน้านี้ได้เลย`);
+    if (!saved.rows[0]?.has_refresh) {
+      res.status(400).send("เชื่อมแล้วแต่ Google ไม่ส่ง refresh_token — เข้า myaccount.google.com/permissions ลบสิทธิ์แอปนี้ แล้วเชื่อมใหม่");
+      return;
+    }
+    res.send(`เชื่อมช่อง YouTube "${channel.snippet?.title}" สำเร็จแล้ว (integration ${saved.rows[0].id}) ปิดหน้านี้ได้เลย`);
   } catch (err: any) {
     res.status(500).send(`เชื่อมไม่สำเร็จ: ${err?.message ?? err}`);
   }

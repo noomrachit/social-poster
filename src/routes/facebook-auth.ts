@@ -64,6 +64,8 @@ facebookAuthRouter.get("/auth/facebook/callback", async (req, res) => {
          SET display_name = EXCLUDED.display_name,
              access_token_enc = EXCLUDED.access_token_enc,
              token_expires_at = NULL,
+             needs_reauth = false,
+             last_error = NULL,
              updated_at = now()`,
         [nanoid(), p.name, p.id, encryptToken(p.access_token)]
       );

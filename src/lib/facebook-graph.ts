@@ -30,6 +30,25 @@ export function buildFacebookAuthUrl(state: string): string {
   return u.toString();
 }
 
+export class FbApiError extends Error {
+  constructor(msg: string, public code?: number, public subcode?: number) { super(msg); }
+}
+/** error ที่แปลว่าสิทธิ์/token ใช้ไม่ได้ (ต้องเชื่อมใหม่) — ไม่ควร fallback หรือ retry */
+export function isFbAuthError(e: any): boolean {
+  return e instanceof FbApiError && (e.code === 190 || e.code === 200 || e.code === 10 || e.code === 102 || /on behalf of user|session has been invalidated|access token/i.test(e.message));
+}
+export const FB_REAUTH_HINT = "สิทธิ์ของผู้ใช้ที่เชื่อมไว้ถูก Meta ถอน/ใช้ไม่ได้ — ตรวจว่าบัญชีมี role ในแอป (หรือแอปเป็น Live) และยังให้สิทธิ์เพจไว้ แล้วเชื่อมใหม่ที่ /auth/facebook/start";
+
+/** ตรวจ page token ด้วย debug_token (ใช้ app token) คืน null ถ้าใช้ได้ หรือข้อความเหตุผล */
+export async function checkFbToken(token: string): Promise<string | null> {
+  let cfg; try { cfg = fbConfig(); } catch { return null; }
+  try {
+    const d = await graphJson(graphUrl("debug_token", { input_token: token, access_token: `${cfg.appId}|${cfg.appSecret}` }));
+    if (d?.data && d.data.is_valid === false) return d.data.error?.message ?? "token ไม่ valid";
+    return null;
+  } catch { return null; } // ตรวจไม่ได้ ไม่ถือว่าเสีย
+}
+
 export async function graphJson(url: string, init?: RequestInit): Promise<any> {
   const res = await fetch(url, init);
   const text = await res.text();
@@ -37,7 +56,7 @@ export async function graphJson(url: string, init?: RequestInit): Promise<any> {
   try { data = JSON.parse(text); } catch { data = { raw: text }; }
   if (!res.ok || data?.error) {
     const msg = data?.error?.message ?? data?.raw ?? `HTTP ${res.status}`;
-    throw new Error(`Facebook API: ${msg}`);
+    throw new FbApiError(`Facebook API: ${msg}`, data?.error?.code, data?.error?.error_subcode);
   }
   return data;
 }
@@ -50,9 +69,11 @@ export async function exchangeCodeForPages(code: string): Promise<FbPage[]> {
   const short = await graphJson(graphUrl("oauth/access_token", {
     client_id: appId, client_secret: appSecret, redirect_uri: redirectUri, code,
   }));
+  // แลกเป็น long-lived user token (~60 วัน) → page token ที่ได้จาก token นี้ไม่หมดอายุ (expires_at=0)
   const long = await graphJson(graphUrl("oauth/access_token", {
     grant_type: "fb_exchange_token", client_id: appId, client_secret: appSecret, fb_exchange_token: short.access_token,
   }));
+  if (!long?.access_token) throw new Error("แลก long-lived token จาก Facebook ไม่สำเร็จ");
   const pages: FbPage[] = [];
   let next: string | undefined = graphUrl("me/accounts", {
     access_token: long.access_token, fields: "id,name,access_token,tasks", limit: "100",

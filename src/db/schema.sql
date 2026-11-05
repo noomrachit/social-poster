@@ -45,5 +45,9 @@ ALTER TABLE posts ADD COLUMN IF NOT EXISTS publishing_started_at TIMESTAMPTZ; --
 ALTER TABLE posts ADD COLUMN IF NOT EXISTS error_message TEXT;          -- เหตุผลที่ล้มเหลวระดับโพสต์
 CREATE INDEX IF NOT EXISTS idx_posts_due ON posts(scheduled_at) WHERE status = 'scheduled';
 
+-- สถานะการเชื่อม: ตั้งเป็น true เมื่อ token ใช้ไม่ได้ (ต้องกดเชื่อมใหม่) ล้างเมื่อเชื่อมใหม่สำเร็จ
+ALTER TABLE integrations ADD COLUMN IF NOT EXISTS needs_reauth BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE integrations ADD COLUMN IF NOT EXISTS last_error TEXT;
+
 CREATE INDEX IF NOT EXISTS idx_post_results_post_id ON post_results(post_id);
 CREATE INDEX IF NOT EXISTS idx_integrations_platform ON integrations(platform);
