@@ -116,3 +116,25 @@ test("publish: ไม่มีวิดีโอ", async () => {
   const r = await tp.tiktokProvider.publish(integration(86_400_000), { content: "x", mediaUrls: [] });
   assert.equal(r.status, "error");
 });
+
+test("publish: refresh token ถูกถอน (invalid_grant) → ตั้ง needs_reauth", async () => {
+  const f: any = async (url: string) => {
+    if (url.endsWith("/v2/oauth/token/")) return new Response(JSON.stringify({ error: "invalid_grant", error_description: "Refresh token is expired" }), { status: 400 });
+    throw new Error("unexpected " + url);
+  };
+  const provider = tp.createTiktokProvider({ fetch: f, sleep: async () => {}, saveTokens: async () => {}, pollAttempts: 1 });
+  // pool ไม่ได้ต่อ DB จริง → markNeedsReauth กลืน error เอง (log เท่านั้น)
+  const r = await provider.publish(integration(60_000), { content: "x", mediaUrls: ["https://media.test/v.mp4"] });
+  assert.equal(r.status, "error");
+  assert.match(r.errorMessage!, /TikTok ต้องเชื่อมใหม่/);
+});
+
+test("tiktokConfig: ไม่ตั้ง APP_BASE_URL → error ไม่ fallback ไปโดเมนฮาร์ดโค้ด", () => {
+  const saved = process.env.APP_BASE_URL;
+  delete process.env.APP_BASE_URL;
+  try {
+    assert.throws(() => lib.tiktokConfig(), /APP_BASE_URL/);
+  } finally {
+    process.env.APP_BASE_URL = saved;
+  }
+});
