@@ -60,9 +60,15 @@ async function fanOut(
   const outcomes = await Promise.allSettled(
     integrations.map(async (integration) => {
       const provider = providers[integration.platform];
-      const result = provider
-        ? await provider.publish(integration, { content, mediaUrls, privacyStatus })
-        : { status: "error" as const, errorMessage: `ไม่รู้จักแพลตฟอร์ม ${integration.platform}` };
+      let result: { status: "success" | "error"; remotePostId?: string; errorMessage?: string };
+      try {
+        result = provider
+          ? await provider.publish(integration, { content, mediaUrls, privacyStatus })
+          : { status: "error", errorMessage: `ไม่รู้จักแพลตฟอร์ม ${integration.platform}` };
+      } catch (err) {
+        // provider โยน exception นอก try/catch ของตัวเอง — ยังต้องบันทึกผลรายแพลตฟอร์ม
+        result = { status: "error", errorMessage: err instanceof Error ? err.message : String(err) };
+      }
 
       await pool.query(
         `INSERT INTO post_results (id, post_id, integration_id, platform, status, remote_post_id, error_message)

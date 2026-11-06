@@ -8,8 +8,9 @@ export const TIKTOK_SCOPES = "user.info.basic,video.upload,video.publish";
 export function tiktokConfig() {
   const clientKey = process.env.TIKTOK_CLIENT_KEY;
   const clientSecret = process.env.TIKTOK_CLIENT_SECRET;
-  const baseUrl = process.env.APP_BASE_URL || "https://app-production-a4bb.up.railway.app";
+  const baseUrl = (process.env.APP_BASE_URL ?? "").replace(/\/$/, "");
   if (!clientKey || !clientSecret) throw new Error("TIKTOK_CLIENT_KEY / TIKTOK_CLIENT_SECRET is not set");
+  if (!baseUrl) throw new Error("APP_BASE_URL is not set (ใช้สร้าง redirect URI ของ TikTok)");
   return { clientKey, clientSecret, redirectUri: `${baseUrl}/auth/tiktok/callback` };
 }
 

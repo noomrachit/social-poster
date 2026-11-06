@@ -1,4 +1,5 @@
 import { pool } from "../db/pool.js";
+import { markNeedsReauth } from "../lib/reauth.js";
 import { decryptToken, refreshAccessToken, tokenColumns, TIKTOK_API } from "../lib/tiktok.js";
 import type { IntegrationRow, PublishInput, PublishResult, SocialProvider } from "./types.js";
 
@@ -51,12 +52,14 @@ const defaultDeps: Deps = {
   sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
   saveTokens: async (id, c) => {
     await pool.query(
-      `UPDATE integrations SET access_token_enc=$1, refresh_token_enc=COALESCE($2, refresh_token_enc), token_expires_at=$3, updated_at=now() WHERE id=$4`,
+      `UPDATE integrations SET access_token_enc=$1, refresh_token_enc=COALESCE($2, refresh_token_enc), token_expires_at=$3, needs_reauth=false, last_error=NULL, updated_at=now() WHERE id=$4`,
       [c.access_token_enc, c.refresh_token_enc, c.token_expires_at, id]
     );
   },
   pollAttempts: 60,
 };
+
+export class TiktokReauthError extends Error {}
 
 /** คืน access token ที่ใช้ได้ รีเฟรชถ้าจะหมดใน 5 นาที */
 export async function getAccessToken(integration: IntegrationRow, deps: Deps = defaultDeps): Promise<string> {
@@ -64,7 +67,16 @@ export async function getAccessToken(integration: IntegrationRow, deps: Deps = d
   if (exp - Date.now() > 5 * 60 * 1000 || !integration.refresh_token_enc) {
     return decryptToken(integration.access_token_enc);
   }
-  const t = await refreshAccessToken(decryptToken(integration.refresh_token_enc), deps.fetch);
+  let t;
+  try {
+    t = await refreshAccessToken(decryptToken(integration.refresh_token_enc), deps.fetch);
+  } catch (e: any) {
+    // refresh token ถูกถอน/หมดอายุถาวร → ต้องเชื่อมใหม่ (token error ของ TikTok ขึ้นต้นด้วย "TikTok token error")
+    if (/invalid_grant|invalid_request|invalid_client|expired|revoked/i.test(String(e?.message))) {
+      throw new TiktokReauthError(`refresh token ใช้ไม่ได้ (${e.message}) — ต้องเชื่อม TikTok ใหม่ที่ /auth/tiktok/start`);
+    }
+    throw e;
+  }
   await deps.saveTokens(integration.id, tokenColumns(t));
   return t.access_token;
 }
@@ -142,6 +154,10 @@ export function createTiktokProvider(deps: Deps = defaultDeps): SocialProvider {
         return { status: "success", remotePostId: publishId };
       } catch (err: any) {
         const msg = err?.message ?? String(err);
+        if (err instanceof TiktokReauthError || /access_token_invalid|scope_not_authorized/.test(msg)) {
+          await markNeedsReauth(integration.id, msg);
+          return { status: "error", errorMessage: `TikTok ต้องเชื่อมใหม่: ${msg}` };
+        }
         return { status: "error", errorMessage: creatorSummary ? `${msg} [${creatorSummary}]` : msg };
       }
     },

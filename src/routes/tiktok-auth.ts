@@ -56,6 +56,8 @@ tiktokAuthRouter.get("/auth/tiktok/callback", async (req, res) => {
            access_token_enc = EXCLUDED.access_token_enc,
            refresh_token_enc = COALESCE(EXCLUDED.refresh_token_enc, integrations.refresh_token_enc),
            token_expires_at = EXCLUDED.token_expires_at,
+           needs_reauth = false,
+           last_error = NULL,
            updated_at = now()`,
       [nanoid(), user.display_name || "TikTok", user.open_id, cols.access_token_enc, cols.refresh_token_enc, cols.token_expires_at]
     );
