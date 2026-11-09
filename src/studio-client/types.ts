@@ -54,7 +54,7 @@ export type ShortPlan = {
   hashtags: string[];
   scenes: Scene[];
   imagePrompt: string;
-  source: "grok" | "local";
+  source: "claude" | "local";
 };
 
 export type DraftInput = {

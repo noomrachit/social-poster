@@ -540,7 +540,7 @@ function renderPlan() {
   $<HTMLInputElement>("title").value = plan.title;
   $<HTMLTextAreaElement>("description").value = plan.description;
   $<HTMLInputElement>("hashtags").value = plan.hashtags.join(" ");
-  $("source").textContent = plan.source === "grok" ? "เขียนโดย Grok" : "ร่างในเครื่อง";
+  $("source").textContent = plan.source === "claude" ? "เขียนโดย Claude" : "ร่างในเครื่อง";
 
   const scenes = $("scenes");
   scenes.replaceChildren();

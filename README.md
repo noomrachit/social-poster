@@ -88,7 +88,7 @@ curl -X POST https://<โดเมนแอป>/posts/import/yingad -H "x-admin-
 พิมพ์หัวข้อ → ได้คลิปแนวตั้ง 9:16 (สคริปต์ ภาพเคลื่อนไหว เสียงพากย์ไทย) → อัดเป็นไฟล์ในเบราว์เซอร์ → อัปโหลดผ่าน `POST /media` แล้วโพสต์ผ่าน `POST /posts` (YouTube Shorts) ในหน้าเดียว
 
 - ใช้ `ADMIN_TOKEN` เดิม (กรอกในหน้า เก็บใน sessionStorage) ไม่มี token ฝังในโค้ดฝั่งเบราว์เซอร์
-- ตั้ง `XAI_API_KEY` บนเซิร์ฟเวอร์เพื่อให้ Grok เขียนสคริปต์/สร้างภาพ/เสียงพากย์ — ไม่ตั้งก็ใช้ได้ (ร่างในเครื่อง + เสียงของเครื่อง)
+- ตั้ง `ANTHROPIC_API_KEY` บนเซิร์ฟเวอร์เพื่อให้ Claude เขียนสคริปต์ (ภาพฉากและเสียงพากย์ยังใช้ `XAI_API_KEY` ถ้าตั้งไว้ ไม่บังคับ) — ไม่ตั้งก็ใช้ได้ (ร่างในเครื่อง + เสียงของเครื่อง)
 - API ฝั่งเซิร์ฟเวอร์: `POST /studio-api/draft`, `POST /studio-api/speak` (ต้องมี `x-admin-token`)
 - โค้ดหน้าเว็บอยู่ที่ `src/studio-client/` และคอมไพล์ไป `public/studio/` ด้วย `npm run build`
 - การอัดคลิปเป็นแบบเรียลไทม์ (คลิป 30 วินาที = อัด 30 วินาที) และห้ามสลับแท็บระหว่างอัด
@@ -103,3 +103,11 @@ curl -X POST https://<โดเมนแอป>/posts/import/yingad -H "x-admin-
 ## โมดูลในรีโป
 
 - `shopee/` — Shopee Affiliate Auto (Python: ดึงสินค้า → เรนเดอร์วิดีโอ → คิวอนุมัติ → โพสต์) deploy แยกเป็น service ของตัวเอง ดู `shopee/README.md`
+
+## ศูนย์ควบคุมเอเจนต์ (`/agents.html`)
+
+เอเจนต์ 12 ตัวทำงานต่อกันเป็นไปป์ไลน์ 5 ขั้น (เก่งวางแผน → คอนเทนต์/เรื่องเล่า → SEO/พร้อมต์ภาพ → สเปกแอป/ตรวจบั๊ก → ส่งออก/ตรวจคุณภาพ) ใช้ Claude ผ่านเซิร์ฟเวอร์
+
+- ตั้ง `ANTHROPIC_API_KEY` ใน Railway Variables (ไม่บังคับ `ANTHROPIC_MODEL`: claude-sonnet-5-5 / claude-opus-5-5 / claude-haiku-5-5)
+- API: `GET /agents-api/config`, `POST /agents-api/test`, `POST /agents-api/step` (ต้องมี `x-admin-token`) หน้าเว็บเรียกทีละขั้นเพื่อแสดงความคืบหน้า
+- ผลลัพธ์อยู่ในหน้าเว็บ คัดลอกหรือดาวน์โหลด .md ได้ ยังไม่บันทึกลงฐานข้อมูล

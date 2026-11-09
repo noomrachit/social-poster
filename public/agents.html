@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ศูนย์ควบคุมเอเจนต์ Claude</title>
+<style>
+  :root{--bg:#0b1020;--card:#141a2e;--line:#27304d;--text:#e8ecf8;--muted:#9aa4c2;--acc:#d97757;--ok:#34d399;--err:#f87171}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Sarabun","Noto Sans Thai",sans-serif;line-height:1.55}
+  main{max-width:1100px;margin:0 auto;padding:16px}
+  h1{margin:8px 0 2px;font-size:1.5rem} h2{font-size:1.05rem;margin:0 0 10px}
+  a{color:#93c5fd} .muted{color:var(--muted);font-size:.85rem}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:12px}
+  label{display:block;font-size:.8rem;color:var(--muted);margin:10px 0 4px}
+  input,select,textarea{width:100%;background:#0a0f1d;color:var(--text);border:1px solid var(--line);border-radius:10px;padding:10px;font:inherit}
+  textarea{min-height:90px;resize:vertical}
+  button{background:var(--acc);color:#1a0d07;border:0;border-radius:10px;padding:10px 16px;font:inherit;font-weight:700;cursor:pointer}
+  button.ghost{background:#1c2440;color:var(--text);border:1px solid var(--line);font-weight:600}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:end} .row>*{flex:1;min-width:150px}
+  .presets{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px}
+  .preset{text-align:left;background:#0a0f1d;border:1px solid var(--line);color:var(--text);padding:10px;border-radius:12px;font-weight:400}
+  .preset.on{border-color:var(--acc)} .preset b{display:block}
+  .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
+  .step{border:1px solid var(--line);border-radius:12px;padding:10px;font-size:.85rem}
+  .step.run{border-color:var(--acc)} .step.done{border-color:var(--ok)} .step.err{border-color:var(--err)}
+  .agents{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px}
+  .agent{border:1px solid var(--line);border-radius:12px;padding:10px;font-size:.85rem}
+  .agent b{display:block} .agent small{color:var(--muted)}
+  pre{white-space:pre-wrap;word-break:break-word;background:#0a0f1d;border:1px solid var(--line);border-radius:10px;padding:10px;margin:8px 0 0;font:inherit;font-size:.88rem}
+  .msg{margin-top:8px;font-size:.85rem} .msg.err{color:var(--err)} .msg.ok{color:var(--ok)}
+  .badge{font-size:.72rem;padding:2px 8px;border-radius:99px;background:#1c2440;color:var(--muted)}
+</style>
+</head>
+<body>
+<main>
+  <h1>ศูนย์ควบคุมเอเจนต์ Claude</h1>
+  <div class="muted"><a href="/app.html">← กลับหน้าโพสต์</a> · เอเจนต์ 12 ตัวทำงานต่อกันเป็นไปป์ไลน์ 5 ขั้น เรียก Claude ผ่านเซิร์ฟเวอร์ ไม่มีคีย์ในเบราว์เซอร์</div>
+
+  <div class="card" id="auth">
+    <label for="token" style="margin-top:0">Admin token</label>
+    <div class="row"><input id="token" type="password" placeholder="ADMIN_TOKEN"><button class="ghost" id="save-token" style="flex:0 0 auto">บันทึกในแท็บนี้</button></div>
+    <div class="msg" id="status"></div>
+  </div>
+
+  <div class="card">
+    <h2>1. เลือกพรีเซ็ตและโจทย์</h2>
+    <div class="presets" id="presets"></div>
+    <div class="row">
+      <div><label for="project">ชื่อโปรเจกต์</label><input id="project" maxlength="200" value="ชุดเปิดตัวสินค้าใหม่"></div>
+      <div style="flex:0 0 220px"><label for="model">โมเดล Claude</label><select id="model"></select></div>
+    </div>
+    <label for="brief">โจทย์</label>
+    <textarea id="brief" maxlength="4000"></textarea>
+    <div class="row" style="margin-top:10px"><button id="run" style="flex:0 0 auto">เริ่มรันโปรเจกต์</button><button class="ghost" id="stop" style="flex:0 0 auto" disabled>หยุด</button></div>
+    <div class="msg" id="run-msg"></div>
+  </div>
+
+  <div class="card"><h2>2. ความคืบหน้า</h2><div class="steps" id="steps"></div></div>
+
+  <div class="card"><h2>3. ผลลัพธ์ <span class="badge" id="count">0</span></h2><div id="library" class="muted">ยังไม่มีผลลัพธ์</div></div>
+
+  <div class="card"><h2>เอเจนต์ทั้งหมด</h2><div class="agents" id="agents"></div><div id="agent-out"></div></div>
+</main>
+<script>
+(function () {
+  var KEY = "social-poster-admin-token";
+  var $ = function (id) { return document.getElementById(id); };
+  var cfg = null, preset = null, results = [], aborted = false, running = false;
+
+  function tok() { try { return sessionStorage.getItem(KEY) || ""; } catch (e) { return ""; } }
+  function setTok(t) { try { sessionStorage.setItem(KEY, t); } catch (e) {} }
+  function say(el, text, cls) { el.textContent = text; el.className = "msg" + (cls ? " " + cls : ""); }
+  function esc(s) { var d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+
+  async function api(path, body) {
+    var res = await fetch(path, {
+      method: body ? "POST" : "GET",
+      headers: { "x-admin-token": tok(), "Content-Type": "application/json" },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    var data = await res.json().catch(function () { return {}; });
+    if (!res.ok) throw new Error(data.error || ("ผิดพลาด " + res.status));
+    return data;
+  }
+
+  function renderSteps(states) {
+    $("steps").innerHTML = cfg.steps.map(function (s, i) {
+      var st = states && states[i] || "wait";
+      var label = { wait: "รอ", run: "กำลังทำ…", done: "เสร็จ", err: "ผิดพลาด" }[st];
+      return '<div class="step ' + st + '"><b>' + (i + 1) + '. ' + esc(s.title) + '</b><div class="muted">' + esc(s.agents.join(" · ")) + '</div><div>' + label + '</div></div>';
+    }).join("");
+  }
+
+  function renderPresets() {
+    $("presets").innerHTML = cfg.presets.map(function (p) {
+      return '<button class="preset' + (preset && preset.id === p.id ? " on" : "") + '" data-id="' + p.id + '"><b>' + esc(p.title) + '</b><span class="muted">' + esc(p.desc) + '</span></button>';
+    }).join("");
+    Array.prototype.forEach.call($("presets").children, function (b) {
+      b.onclick = function () {
+        preset = cfg.presets.filter(function (p) { return String(p.id) === b.getAttribute("data-id"); })[0];
+        $("brief").value = preset.brief;
+        if (preset.id !== 4) $("project").value = preset.title;
+        renderPresets();
+      };
+    });
+  }
+
+  function renderAgents() {
+    $("agents").innerHTML = cfg.agents.map(function (a, i) {
+      return '<div class="agent"><b>' + esc(a.name) + '</b><small>' + esc(a.role) + ' · ' + esc(a.pod) + '</small><div>' + esc(a.desc) + '</div><button class="ghost" data-i="' + i + '" style="margin-top:8px;padding:6px 10px">ทดสอบ</button></div>';
+    }).join("");
+    Array.prototype.forEach.call($("agents").querySelectorAll("button"), function (b) {
+      b.onclick = async function () {
+        var a = cfg.agents[Number(b.getAttribute("data-i"))];
+        b.disabled = true; $("agent-out").innerHTML = '<div class="muted">กำลังเรียก ' + esc(a.name) + '…</div>';
+        try {
+          var r = await api("/agents-api/test", { agent: a.name, project: $("project").value, brief: $("brief").value, model: $("model").value });
+          $("agent-out").innerHTML = '<pre><b>' + esc(a.name) + ' · ' + esc(r.model) + '</b>\n\n' + esc(r.text) + '</pre>';
+        } catch (e) { $("agent-out").innerHTML = '<div class="msg err">' + esc(e.message) + '</div>'; }
+        b.disabled = false;
+      };
+    });
+  }
+
+  function renderLibrary() {
+    $("count").textContent = String(results.length);
+    if (!results.length) { $("library").textContent = "ยังไม่มีผลลัพธ์"; return; }
+    $("library").innerHTML = results.map(function (r, i) {
+      return '<div style="margin-top:10px"><b>' + esc(r.title) + '</b> <span class="muted">' + esc(r.time) + ' · ' + esc(r.model) + '</span><div class="row" style="margin-top:6px"><button class="ghost" data-c="' + i + '" style="flex:0 0 auto">คัดลอก</button><button class="ghost" data-d="' + i + '" style="flex:0 0 auto">ดาวน์โหลด .md</button></div><pre>' + esc(r.content) + '</pre></div>';
+    }).join("");
+    Array.prototype.forEach.call($("library").querySelectorAll("button"), function (b) {
+      b.onclick = function () {
+        var c = b.getAttribute("data-c"), d = b.getAttribute("data-d");
+        if (c !== null) { navigator.clipboard.writeText(results[Number(c)].content).then(function () { b.textContent = "คัดลอกแล้ว"; }); }
+        if (d !== null) {
+          var r = results[Number(d)], url = URL.createObjectURL(new Blob([r.content], { type: "text/markdown;charset=utf-8" })), a = document.createElement("a");
+          a.href = url; a.download = (r.title.replace(/[^\wก-๙\s-]/g, "").trim().replace(/\s+/g, "-") || "result") + ".md";
+          document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+        }
+      };
+    });
+  }
+
+  async function run() {
+    if (running) return;
+    running = true; aborted = false;
+    $("run").disabled = true; $("stop").disabled = false;
+    var project = $("project").value.trim() || "โปรเจกต์ไม่ตั้งชื่อ", brief = $("brief").value.trim(), model = $("model").value;
+    var states = cfg.steps.map(function () { return "wait"; }), previous = [], sections = [];
+    renderSteps(states); say($("run-msg"), "กำลังรัน… แต่ละขั้นใช้เวลาประมาณครึ่งนาที");
+    try {
+      for (var i = 0; i < cfg.steps.length; i++) {
+        if (aborted) { say($("run-msg"), "หยุดแล้ว"); break; }
+        states[i] = "run"; renderSteps(states);
+        var r;
+        try { r = await api("/agents-api/step", { step: i, project: project, brief: brief, previous: previous, model: model }); }
+        catch (e) { states[i] = "err"; renderSteps(states); throw e; }
+        states[i] = "done"; renderSteps(states);
+        var text = r.outputs.map(function (o) { return "### " + o.agent + "\n" + o.text; }).join("\n\n");
+        previous.push(text); sections.push("## " + (i + 1) + ". " + r.title + "\n\n" + text);
+        if (i === cfg.steps.length - 1) {
+          results.unshift({ title: project, time: new Date().toLocaleString("th-TH"), model: model,
+            content: "# " + project + "\n\n**โจทย์:** " + (brief || "-") + "\n**โมเดล:** " + model + "\n\n" + sections.join("\n\n") });
+          renderLibrary(); say($("run-msg"), "รันเสร็จแล้ว ดูผลลัพธ์ด้านล่าง", "ok");
+        }
+      }
+    } catch (e) { say($("run-msg"), e.message, "err"); }
+    running = false; $("run").disabled = false; $("stop").disabled = true;
+  }
+
+  async function init() {
+    $("token").value = tok();
+    $("save-token").onclick = function () { setTok($("token").value.trim()); load(); };
+    $("run").onclick = run; $("stop").onclick = function () { aborted = true; };
+    load();
+  }
+
+  async function load() {
+    try {
+      cfg = await api("/agents-api/config");
+    } catch (e) { say($("status"), e.message + " — ใส่ Admin token แล้วกดบันทึก", "err"); return; }
+    say($("status"), cfg.ready ? "พร้อมใช้งาน (Claude เชื่อมที่เซิร์ฟเวอร์แล้ว)" : "เซิร์ฟเวอร์ยังไม่ได้ตั้ง ANTHROPIC_API_KEY ใน Railway Variables", cfg.ready ? "ok" : "err");
+    $("model").innerHTML = cfg.models.map(function (m) { return '<option' + (m === cfg.defaultModel ? " selected" : "") + '>' + m + '</option>'; }).join("");
+    preset = cfg.presets[0]; $("brief").value = $("brief").value || preset.brief;
+    renderPresets(); renderSteps(); renderAgents(); renderLibrary();
+  }
+  init();
+})();
+</script>
+</body>
+</html>

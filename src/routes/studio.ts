@@ -4,7 +4,7 @@ import { draftShort, parseDraftInput, parseSpeakInput, speakShort } from "../lib
 // การล็อก token ทำใน src/index.ts (ครอบ /studio-api)
 export const studioRouter = Router();
 
-// POST /studio-api/draft — ให้ Grok เขียนสคริปต์คลิป (+ภาพฉากถ้าขอ) ถ้า AI ใช้ไม่ได้จะคืนร่างในเครื่องพร้อม note
+// POST /studio-api/draft — ให้ Claude เขียนสคริปต์คลิป (+ภาพฉากถ้าขอ) ถ้า AI ใช้ไม่ได้จะคืนร่างในเครื่องพร้อม note
 studioRouter.post("/studio-api/draft", async (req, res) => {
   let input;
   try {

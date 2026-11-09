@@ -11,6 +11,7 @@ import { ttsRouter } from "./routes/tts.js";
 import { mediaRouter } from "./routes/media.js";
 import { studioRouter } from "./routes/studio.js";
 import { legalRouter } from "./routes/legal.js";
+import { agentsRouter } from "./routes/agents.js";
 import { tiktokAuthRouter } from "./routes/tiktok-auth.js";
 import { mcpRouter } from "./mcp.js";
 import { requireAdmin } from "./lib/admin-auth.js";
@@ -39,7 +40,7 @@ app.use(legalRouter);
 app.use(express.static(join(__dirname, "..", "public")));
 
 // เส้นทางที่ต้องใช้ token ระบุชัดเจนตรงนี้ที่เดียว (ไม่ใช้ router.use ใน router เพราะจะครอบเส้นทางอื่นที่ mount ทีหลัง)
-app.use(["/integrations", "/posts", "/analytics", "/studio-api", "/tts"], requireAdmin);
+app.use(["/integrations", "/posts", "/analytics", "/studio-api", "/tts", "/agents-api"], requireAdmin);
 
 // สาธารณะ: OAuth callback (Google เรียก) และ GET /media/:name (แพลตฟอร์มปลายทางดึงไฟล์) — POST /media ล็อกใน router เอง
 app.use(authRouter);
@@ -52,6 +53,7 @@ app.use(postsRouter);
 app.use(analyticsRouter);
 app.use(ttsRouter);
 app.use(studioRouter);
+app.use(agentsRouter);
 
 const port = Number(process.env.PORT) || 3000;
 app.listen(port, () => {

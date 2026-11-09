@@ -13,9 +13,9 @@ test("parseDraftInput: ตรวจหัวข้อ สูตร และค�
   assert.throws(() => parseDraftInput(null));
 });
 
-test("draftShort: ไม่มี XAI_API_KEY ใช้ร่างในเครื่องพร้อม note", async () => {
-  const saved = process.env.XAI_API_KEY;
-  delete process.env.XAI_API_KEY;
+test("draftShort: ไม่มี ANTHROPIC_API_KEY ใช้ร่างในเครื่องพร้อม note", async () => {
+  const saved = process.env.ANTHROPIC_API_KEY;
+  delete process.env.ANTHROPIC_API_KEY;
   try {
     const out = await draftShort(parseDraftInput({ topic: "กาแฟท้องว่าง", style: "hook", seconds: 15, useAi: true, withImage: true }));
     assert.equal(out.plan.source, "local");
@@ -23,7 +23,7 @@ test("draftShort: ไม่มี XAI_API_KEY ใช้ร่างในเค�
     assert.equal(out.image, null);
     assert.match(out.note ?? "", /AI ยังไม่พร้อม/);
   } finally {
-    if (saved !== undefined) process.env.XAI_API_KEY = saved;
+    if (saved !== undefined) process.env.ANTHROPIC_API_KEY = saved;
   }
 });
 

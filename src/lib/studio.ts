@@ -1,3 +1,4 @@
+import { askClaude, claudeReady } from "./claude.js";
 import { composeLocal } from "../studio-client/compose.js";
 import {
   sceneCount,
@@ -12,8 +13,8 @@ import {
   type VoiceId,
 } from "../studio-client/types.js";
 
-// ฝั่งเซิร์ฟเวอร์ของสตูดิโอ: เรียก xAI (Grok) เขียนสคริปต์ / สร้างภาพฉาก / สร้างเสียงพากย์
-// XAI_API_KEY ตั้งผ่าน ENV ของเซิร์ฟเวอร์เท่านั้น ไม่ส่งไปเบราว์เซอร์
+// ฝั่งเซิร์ฟเวอร์ของสตูดิโอ: Claude เขียนสคริปต์ (ANTHROPIC_API_KEY) ส่วนภาพฉากและเสียงพากย์ใช้ xAI (XAI_API_KEY, ไม่บังคับ)
+// คีย์ตั้งผ่าน ENV ของเซิร์ฟเวอร์เท่านั้น ไม่ส่งไปเบราว์เซอร์
 
 const STYLE_IDS: StyleId[] = STYLES.map((item) => item.id);
 const VOICE_IDS: VoiceId[] = VOICES.map((item) => item.id);
@@ -113,35 +114,18 @@ const SYSTEM = `คุณเป็นผู้เขียนสคริปต�
   "scenes": [{"kicker":"ป้ายสั้น","caption":"ไม่เกิน 2 บรรทัด คั่นด้วย \\n แต่ละบรรทัดไม่เกิน 18 ตัวอักษร","narration":"ประโยคพากย์หนึ่งประโยค"}]
 }`;
 
-async function fromGrok(input: DraftInput, apiKey: string, fallback: ShortPlan): Promise<ShortPlan> {
+async function fromClaude(input: DraftInput, fallback: ShortPlan): Promise<ShortPlan> {
   const count = sceneCount(input.seconds);
-  const res = await fetch("https://api.x.ai/v1/chat/completions", {
-    method: "POST",
-    signal: AbortSignal.timeout(25000),
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: "grok-4.5",
-      temperature: 0.7,
-      max_tokens: 900,
-      messages: [
-        { role: "system", content: SYSTEM },
-        {
-          role: "user",
-          content: `หัวข้อ: ${input.topic}
+  const text = await askClaude(
+    SYSTEM,
+    `หัวข้อ: ${input.topic}
 สูตร: ${STYLE_BRIEFS[input.style]}
 ความยาว: ${input.seconds} วินาที
 จำนวนฉาก: ${count} ฉากเป๊ะ ฉากแรกคือฮุค ฉากสุดท้ายชวนให้ทำหรือจำ
 ผูกเนื้อหากับหัวข้อนี้จริง ห้ามเขียนคำแนะนำที่ใช้กับทุกหัวข้อได้`,
-        },
-      ],
-    }),
-  });
-  if (!res.ok) throw new Error(`เขียนสคริปต์ไม่สำเร็จ (${res.status})`);
-  const body = (await res.json()) as { choices?: { message?: { content?: unknown } }[] };
-  const parsed = parseJson(contentText(body.choices?.[0]?.message?.content));
+    { maxTokens: 1200, timeoutMs: 30000 }
+  );
+  const parsed = parseJson(text);
   return {
     topic: input.topic,
     style: input.style,
@@ -151,7 +135,7 @@ async function fromGrok(input: DraftInput, apiKey: string, fallback: ShortPlan):
     hashtags: normalizeTags(parsed.hashtags),
     scenes: asScenes(parsed.scenes, fallback.scenes, count),
     imagePrompt: clip(parsed.imagePrompt, 400, fallback.imagePrompt),
-    source: "grok",
+    source: "claude",
   };
 }
 
@@ -195,29 +179,29 @@ function joinNote(current: string | null, extra: string) {
 
 
 export async function draftShort(data: DraftInput): Promise<{ plan: ShortPlan; image: string | null; note: string | null }> {
-  const apiKey = process.env.XAI_API_KEY;
+  const imageKey = process.env.XAI_API_KEY;
   let plan = composeLocal(data);
   let note: string | null = null;
 
   if (data.useAi) {
-    if (!apiKey) {
+    if (!claudeReady()) {
       note = "ใช้ร่างในเครื่อง เพราะ AI ยังไม่พร้อม";
     } else {
       try {
-        plan = await fromGrok(data, apiKey, plan);
+        plan = await fromClaude(data, plan);
       } catch {
-        note = "ใช้ร่างในเครื่อง เพราะเขียนด้วย Grok ไม่สำเร็จ";
+        note = "ใช้ร่างในเครื่อง เพราะเขียนด้วย Claude ไม่สำเร็จ";
       }
     }
   }
 
   let image: string | null = null;
   if (data.withImage) {
-    if (!apiKey) {
-      note = joinNote(note, "ข้ามภาพฉาก เพราะ AI ยังไม่พร้อม");
+    if (!imageKey) {
+      note = joinNote(note, "ข้ามภาพฉาก เพราะบริการสร้างภาพยังไม่พร้อม");
     } else {
       try {
-        image = await generateStill(plan.imagePrompt || plan.topic, apiKey);
+        image = await generateStill(plan.imagePrompt || plan.topic, imageKey);
         if (!image) note = joinNote(note, "สคริปต์พร้อมแล้ว แต่สร้างภาพฉากไม่สำเร็จ");
       } catch {
         note = joinNote(note, "สคริปต์พร้อมแล้ว แต่สร้างภาพฉากไม่สำเร็จ");
