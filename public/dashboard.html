@@ -189,13 +189,13 @@ textarea.field{min-height:96px;resize:vertical}
 .pres{display:flex;flex-wrap:wrap;gap:6px;font-size:12px}
 .pres span{border:1px dashed var(--line-solid);border-radius:8px;padding:2px 8px}
 /* แผนภาพเอเจนต์ 3 มิติ */
-.ag-scene{perspective:900px;height:300px;display:grid;place-items:center;overflow:hidden}
-.ag-ring{position:relative;width:150px;height:60px;transform-style:preserve-3d;transform:rotateX(-14deg);animation:agspin 24s linear infinite}
-.ag-node{position:absolute;left:50%;top:50%;width:130px;margin:-30px 0 0 -65px;padding:8px 6px;text-align:center;font-size:12px;line-height:1.35;background:var(--raised);border:1px solid var(--accent);border-radius:10px;box-shadow:0 8px 20px #0007;backface-visibility:hidden}
+.ag-scene{perspective:1100px;height:300px;display:grid;place-items:center;overflow:hidden}
+.ag-ring{position:relative;width:150px;height:60px;transform-style:preserve-3d;transform:rotateX(-26deg);animation:agspin 24s linear infinite}
+.ag-node{position:absolute;left:50%;top:50%;width:118px;margin:-30px 0 0 -59px;padding:8px 6px;text-align:center;font-size:12px;line-height:1.35;background:var(--raised);border:1px solid var(--accent);border-radius:10px;box-shadow:0 8px 20px #0007;backface-visibility:hidden}
 .ag-node em{display:block;font-style:normal;color:var(--muted);font-size:11px}
-.ag-core{position:absolute;left:50%;top:50%;width:92px;margin:-26px 0 0 -46px;padding:10px 4px;text-align:center;font-size:13px;font-weight:600;border-radius:50%;background:var(--accent);color:#1a1424;transform:rotateX(14deg);animation:agcounter 24s linear infinite}
-@keyframes agspin{to{transform:rotateX(-14deg) rotateY(360deg)}}
-@keyframes agcounter{to{transform:rotateX(14deg) rotateY(-360deg)}}
+.ag-core{position:absolute;left:50%;top:50%;width:92px;margin:-110px 0 0 -46px;padding:12px 4px;text-align:center;font-size:13px;font-weight:600;border-radius:50%;background:var(--accent);color:#1a1424;transform:rotateX(26deg);animation:agcounter 24s linear infinite}
+@keyframes agspin{to{transform:rotateX(-26deg) rotateY(360deg)}}
+@keyframes agcounter{to{transform:rotateX(26deg) rotateY(-360deg)}}
 @media (prefers-reduced-motion:reduce){.ag-ring,.ag-core{animation:none}}
 .ag-list{margin:0;padding-left:18px;font-size:13px;color:var(--muted)}
 /* ฉาก 3 มิติ: perspective ที่ตัวห่อ, เอียงทั้งกริดตามเมาส์, แต่ละหน้าต่างลอยที่ระดับ translateZ ต่างกัน */
@@ -473,7 +473,7 @@ textarea.field{min-height:96px;resize:vertical}
       +'<div class="stack" id="psList"></div>';
     var AG=[["ตรวจระบบแอป","ทุกวัน 07:43 อ่านอย่างเดียว"],["แก้โค้ดและ PR","social-poster บน Railway"],["ตัดต่อคลิป","ภาพ เสียง ดนตรี"],["สกิลแนะนำเมื่อพลาด","หาสาเหตุและวิธีกันซ้ำ"],["เขียนสคริปต์","ฮุคและคำชวนท้ายคลิป"]];
     var agh='<div class="ag-scene" aria-hidden="true"><div class="ag-ring">';
-    AG.forEach(function(a,i){agh+='<div class="ag-node" style="transform:rotateY('+(i*360/AG.length)+'deg) translateZ(170px)">'+esc(a[0])+'<em>'+esc(a[1])+'</em></div>';});
+    AG.forEach(function(a,i){agh+='<div class="ag-node" style="transform:rotateY('+(i*360/AG.length)+'deg) translateZ(125px)">'+esc(a[0])+'<em>'+esc(a[1])+'</em></div>';});
     agh+='<div class="ag-core">Claude<br>ตัวหลัก</div></div></div><ul class="ag-list">';
     AG.forEach(function(a){agh+='<li>'+esc(a[0])+': '+esc(a[1])+'</li>';});
     $("b-agents").innerHTML=agh+'</ul>';
