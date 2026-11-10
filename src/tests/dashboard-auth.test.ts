@@ -61,7 +61,7 @@ test("DASHBOARD_TOKEN ผิดหรือไม่ได้ตั้งค่�
   assert.equal(run({ dash: "" }).status, 401);
 });
 
-test("POST /posts ด้วย DASHBOARD_TOKEN: ต้อง draft/schedule และ privacyStatus เริ่มต้น private", () => {
+test("POST /posts ด้วย DASHBOARD_TOKEN: ต้อง draft/schedule และ privacyStatus เป็น private เสมอ", () => {
   process.env.DASHBOARD_TOKEN = "dash-x";
   for (const body of [{ mode: "now" }, {}, undefined, { mode: "publish" }]) {
     const r = run({ dash: "dash-x", method: "POST", url: "/posts", body: body ? { content: "x", ...body } : body });
@@ -71,8 +71,15 @@ test("POST /posts ด้วย DASHBOARD_TOKEN: ต้อง draft/schedule แ�
   const ok = run({ dash: "dash-x", method: "POST", url: "/posts", body: { content: "x", mode: "draft" } });
   assert.equal(ok.nextCalled, true);
   assert.equal(ok.req.body.privacyStatus, "private");
-  const keep = run({ dash: "dash-x", method: "POST", url: "/posts", body: { content: "x", mode: "schedule", privacyStatus: "unlisted" } });
-  assert.equal(keep.req.body.privacyStatus, "unlisted");
+  for (const ps of ["public", "unlisted", "private", "garbage"]) {
+    const r = run({ dash: "dash-x", method: "POST", url: "/posts", body: { content: "x", mode: "schedule", privacyStatus: ps } });
+    assert.equal(r.nextCalled, true);
+    assert.equal(r.req.body.privacyStatus, "private", `ส่ง ${ps} ต้องถูกทับเป็น private`);
+  }
+  // ADMIN_TOKEN ไม่ถูกบังคับ
+  process.env.ADMIN_TOKEN = "admin-x";
+  const adm = run({ admin: "admin-x", method: "POST", url: "/posts", body: { content: "x", mode: "now", privacyStatus: "public" } });
+  assert.equal(adm.req.body.privacyStatus, "public");
 });
 
 test("isDashboardAllowed: / ท้ายและ query ไม่ทำให้หลุด allowlist", () => {

@@ -99,7 +99,7 @@ curl -X POST https://<โดเมนแอป>/posts/import/yingad -H "x-admin-
 
 - `CORS_ORIGINS` — รายชื่อโดเมนแดชบอร์ดที่อนุญาต คั่นด้วยจุลภาค เช่น `https://a.example,https://b.example` (ห้ามใช้ `*`) ไม่ตั้ง = ปิด CORS ทั้งหมด ตอบ preflight (OPTIONS) ก่อนตรวจ token และอนุญาต header `x-dashboard-token`, `x-admin-token`, `content-type`
 - `DASHBOARD_TOKEN` — โทเคนสิทธิ์จำกัดส่งผ่าน header `x-dashboard-token` เข้าได้เฉพาะ `GET /integrations`, `POST /media`, `POST /posts`, `GET /posts`, `GET /posts/:id` ส่วนเส้นทางอื่นได้ 403 ไม่ตั้งค่า = ปฏิเสธทุกคำขอที่ใช้โทเคนนี้
-  - `POST /posts` ต้องส่ง `mode` เป็น `draft` หรือ `schedule` เท่านั้น (ห้าม `now`) และถ้าไม่ส่ง `privacyStatus` จะเป็น `private`
+  - `POST /posts` ต้องส่ง `mode` เป็น `draft` หรือ `schedule` เท่านั้น (ห้าม `now`) และ `privacyStatus` ถูกบังคับเป็น `private` เสมอ (ค่าอื่นที่ส่งมา เช่น `public`/`unlisted` ถูกทับเป็น `private`)
   - `ADMIN_TOKEN` เดิมทำงานเหมือนเดิมทุกอย่าง
 
 ## Deploy บน Railway

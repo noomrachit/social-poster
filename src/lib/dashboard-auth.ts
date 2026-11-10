@@ -18,7 +18,7 @@ export function isDashboardAllowed(method: string, rawUrl: string): boolean {
 
 /**
  * ใช้แทน requireAdmin: มี x-admin-token → ตรวจแบบเดิมเป๊ะ
- * มีเฉพาะ x-dashboard-token → ตรวจ DASHBOARD_TOKEN + จำกัดเส้นทาง + บังคับกฎของ POST /posts
+ * มีเฉพาะ x-dashboard-token → ตรวจ DASHBOARD_TOKEN + จำกัดเส้นทาง + บังคับกฎของ POST /posts (mode + privacyStatus = private เสมอ)
  * ไม่มีทั้งคู่ → พฤติกรรมเดิมของ requireAdmin
  */
 export function requireAdminOrDashboard(req: Request, res: Response, next: NextFunction): void {
@@ -48,7 +48,8 @@ export function requireAdminOrDashboard(req: Request, res: Response, next: NextF
       res.status(403).json({ error: "token นี้สร้างโพสต์ได้เฉพาะ mode = draft หรือ schedule (ห้ามโพสต์ทันที)" });
       return;
     }
-    if (body.privacyStatus === undefined) body.privacyStatus = "private";
+    // บังคับ private ทุกกรณี (ค่าอื่นที่ส่งมา เช่น public/unlisted ถูกทับเป็น private ไม่ปฏิเสธ เพื่อไม่ให้แดชบอร์ดพัง)
+    body.privacyStatus = "private";
   }
   next();
 }
