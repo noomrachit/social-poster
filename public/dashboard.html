@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>แดชบอร์ดทำคลิป</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500&family=Noto+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* เลย์เอาต์: หัวเรื่อง > การ์ดสรุป > แถบค้นหา > บอร์ด 4 คอลัมน์ (มือถือเลื่อนแนวนอนทีละคอลัมน์) */
+:root{
+  --bg:#14121b;
+  --surface:#1d1a27;
+  --raised:#262234;
+  --line:#34304440;
+  --line-solid:#343044;
+  --text:#f1edf7;
+  --muted:#a29bb5;
+  --accent:#f3b95f;
+  --accent-ink:#2a1c05;
+  --idea:#8fa8ff;
+  --script:#c79bff;
+  --edit:#ff9d7a;
+  --done:#6fd6a4;
+  --danger:#ff7b8a;
+  --display:"Mitr","Noto Sans Thai",sans-serif;
+  --body:"Noto Sans Thai","Sarabun",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font-family:var(--body);font-size:15px;line-height:1.55;
+  background-image:radial-gradient(900px 400px at 85% -10%,#2a2142 0%,transparent 60%)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:1240px;margin:0 auto;padding:20px 16px 56px;display:flex;flex-direction:column;gap:20px}
+header{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:flex-end;justify-content:space-between}
+h1{font-family:var(--display);font-weight:500;font-size:28px;line-height:1.2;margin:0;text-wrap:balance}
+.sub{color:var(--muted);margin:4px 0 0;font-size:14px}
+.btn{border:1px solid var(--line-solid);background:var(--raised);padding:9px 16px;border-radius:10px;font-weight:500;min-height:40px}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.small{padding:4px 10px;min-height:32px;font-size:13px;border-radius:8px}
+.btn.danger{color:var(--danger)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.danger.confirm{background:var(--danger);color:#2b0710;border-color:var(--danger)}
+
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.stat{background:var(--surface);border:1px solid var(--line-solid);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:2px;position:relative;overflow:hidden}
+.stat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--c,var(--accent))}
+.stat .n{font-family:var(--display);font-size:34px;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat .l{font-weight:600;font-size:14px}
+.stat .d{color:var(--muted);font-size:12px}
+
+.tools{display:flex;flex-wrap:wrap;gap:10px}
+.search{flex:1 1 220px;min-width:0;background:var(--surface);border:1px solid var(--line-solid);border-radius:10px;padding:9px 14px;min-height:40px}
+.search::placeholder{color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line-solid);background:transparent;padding:6px 14px;border-radius:999px;font-size:14px;color:var(--muted);min-height:36px}
+.chip[aria-pressed="true"]{background:var(--text);color:var(--bg);border-color:var(--text);font-weight:600}
+
+.board{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:10px;margin:0 -16px;padding-left:16px;padding-right:16px;scroll-padding-left:16px}
+.col{flex:0 0 84%;scroll-snap-align:start;background:var(--surface);border:1px solid var(--line-solid);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:10px;align-self:flex-start;min-height:140px;max-width:380px}
+.col-h{display:flex;align-items:center;gap:8px;padding:2px 4px}
+.col-h .dot{width:10px;height:10px;border-radius:50%;background:var(--c)}
+.col-h h2{font-family:var(--display);font-weight:500;font-size:17px;margin:0;flex:1}
+.col-h .cnt{color:var(--muted);font-variant-numeric:tabular-nums;font-size:14px}
+.empty{color:var(--muted);font-size:13px;text-align:center;padding:18px 8px;border:1px dashed var(--line-solid);border-radius:12px}
+
+.card{background:var(--raised);border:1px solid var(--line-solid);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px;border-top:3px solid var(--c)}
+.card h3{margin:0;font-size:15px;font-weight:600;line-height:1.4;overflow-wrap:anywhere}
+.meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:12px;color:var(--muted)}
+.tag{padding:2px 9px;border-radius:999px;background:#ffffff12;color:var(--text);font-size:12px}
+.hook{font-size:13px;color:var(--muted);overflow-wrap:anywhere;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.prog{height:5px;border-radius:3px;background:#ffffff14;overflow:hidden}
+.prog i{display:block;height:100%;background:var(--c);border-radius:3px}
+.prog-t{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;display:flex;justify-content:space-between}
+.acts{display:flex;flex-wrap:wrap;gap:6px}
+.late{color:var(--danger)}
+
+.overlay{position:fixed;inset:0;background:#0a0810cc;display:none;align-items:flex-end;justify-content:center;z-index:20;padding:0}
+.overlay.open{display:flex}
+.sheet{background:var(--surface);border:1px solid var(--line-solid);border-radius:18px 18px 0 0;width:100%;max-width:600px;max-height:92vh;overflow-y:auto;padding:20px 16px 24px;display:flex;flex-direction:column;gap:14px}
+.sheet h2{font-family:var(--display);font-weight:500;font-size:21px;margin:0;text-wrap:balance;overflow-wrap:anywhere}
+.row{display:flex;flex-direction:column;gap:6px}
+.row label,.lab{font-size:13px;font-weight:600;color:var(--muted)}
+.field{background:var(--bg);border:1px solid var(--line-solid);border-radius:10px;padding:10px 12px;width:100%;min-height:42px}
+textarea.field{min-height:96px;resize:vertical}
+.two{display:grid;grid-template-columns:1fr;gap:14px}
+.sheet-foot{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end}
+.err{color:var(--danger);font-size:13px;min-height:18px}
+.box{background:var(--bg);border:1px solid var(--line-solid);border-radius:10px;padding:10px 12px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;max-height:200px;overflow-y:auto}
+.box.none{color:var(--muted)}
+.copyrow{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.check{display:flex;flex-direction:column;gap:6px}
+.check label{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--bg);border:1px solid var(--line-solid);border-radius:10px;min-height:42px;cursor:pointer}
+.check input{width:20px;height:20px;accent-color:var(--accent);flex:none}
+.check .off{color:var(--muted);text-decoration:line-through}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:600;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:40;max-width:90vw}
+.toast.show{opacity:1}
+.note{color:var(--muted);font-size:12px}
+
+@media (min-width:700px){
+  h1{font-size:34px}
+  .stats{grid-template-columns:repeat(4,1fr)}
+  .two{grid-template-columns:1fr 1fr}
+  .overlay{align-items:center;padding:20px}
+  .sheet{border-radius:18px}
+}
+@media (min-width:1000px){
+  .board{display:grid;grid-template-columns:repeat(4,1fr);overflow:visible;margin:0;padding:0}
+  .col{flex:none;max-width:none}
+}
+[hidden]{display:none!important}
+.locked .wrap{display:none}
+.gate{display:none;min-height:100vh;align-items:center;justify-content:center;padding:20px 16px}
+.locked .gate{display:flex}
+.gate-card{width:100%;max-width:400px;background:var(--surface);border:1px solid var(--line-solid);border-radius:18px;padding:26px 20px;display:flex;flex-direction:column;gap:14px}
+.gate-card h1{font-size:26px}
+.pw{display:flex;gap:8px}
+.pw .field{flex:1;min-width:0}
+.gate-note{color:var(--muted);font-size:12px;border-top:1px solid var(--line-solid);padding-top:12px;margin:0}
+.hint{color:var(--muted);font-size:13px;margin:0}
+@media (prefers-reduced-motion:reduce){.toast{transition:none}}
+
+/* หน้าต่างแผงควบคุม 3x3 */
+.grid{display:grid;grid-template-columns:1fr;gap:14px;align-items:start}
+.win{background:var(--surface);border:1px solid var(--line-solid);border-radius:16px;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.win-h{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--raised);border-bottom:1px solid var(--line-solid)}
+.win-h .num{width:24px;height:24px;border-radius:7px;background:var(--bg);color:var(--accent);font-size:12px;font-weight:600;display:grid;place-items:center;flex:none;font-variant-numeric:tabular-nums}
+.win-h h2{font-family:var(--display);font-weight:500;font-size:16px;margin:0;flex:1;min-width:0}
+.win-sub{margin:0;padding:8px 14px 0;color:var(--muted);font-size:12px}
+.win-sub.warn{color:var(--accent)}
+.win-b{padding:12px 14px 14px;display:flex;flex-direction:column;gap:10px;max-height:400px;overflow-y:auto}
+.win.wide .win-b{max-height:none}
+.win.wide{grid-column:1/-1}
+.mini{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mini .stat{padding:12px 14px}
+.mini .stat .n{font-size:30px}
+.tabs{display:flex;flex-wrap:wrap;gap:6px}
+.tab{border:1px solid var(--line-solid);background:transparent;color:var(--muted);padding:5px 12px;border-radius:999px;font-size:13px;min-height:34px}
+.tab[aria-pressed="true"]{background:var(--c);color:#1a1424;border-color:var(--c);font-weight:600}
+.stack{display:flex;flex-direction:column;gap:10px}
+.board4{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px}
+.board4 .col{flex:0 0 80%;max-width:340px}
+.qgroup h3{margin:0 0 6px;font-size:13px;color:var(--muted);font-weight:600}
+.qitem{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left;background:var(--raised);border:1px solid var(--line-solid);border-radius:10px;padding:9px 12px;min-height:44px}
+.qitem:hover{border-color:var(--muted)}
+.qitem b{font-weight:600;font-size:14px;overflow-wrap:anywhere}
+.tag.sample{background:transparent;border:1px dashed var(--muted);color:var(--muted)}
+.mrow{display:flex;flex-direction:column;gap:8px;padding:10px 12px;background:var(--raised);border:1px solid var(--line-solid);border-radius:10px}
+.mrow .nm{font-weight:600;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.st-chips{display:flex;flex-wrap:wrap;gap:6px}
+.stb{border:1px solid var(--line-solid);background:transparent;color:var(--muted);padding:4px 11px;border-radius:999px;font-size:13px;min-height:34px}
+.stb[aria-pressed="true"]{color:#1a1424;font-weight:600;background:var(--c);border-color:var(--c)}
+.stb.ok{--c:var(--done)}.stb.watch{--c:var(--accent)}.stb.bad{--c:var(--danger)}.stb.none{--c:var(--muted)}
+.libitem{display:flex;flex-direction:column;gap:8px;padding:10px 12px;background:var(--raised);border:1px solid var(--line-solid);border-radius:10px}
+.libitem b{font-weight:600;font-size:14px;overflow-wrap:anywhere}
+.todo{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--raised);border:1px solid var(--line-solid);border-radius:10px;min-height:44px}
+.todo label{flex:1;display:flex;align-items:center;gap:10px;cursor:pointer;overflow-wrap:anywhere;min-width:0}
+.todo input{width:20px;height:20px;accent-color:var(--accent);flex:none}
+.todo .off{color:var(--muted);text-decoration:line-through}
+.inline{display:flex;gap:8px}
+.inline .field{flex:1;min-width:0}
+@media (max-width:999px){
+  .win-b{max-height:none}
+  .btn,.btn.small,.chip,.tab,.stb,.search,.field,.check label,.todo,.qitem{min-height:44px}
+  .btn.small{padding:8px 14px;font-size:14px}
+  .note,.win-sub,.tag,.prog-t,.meta,.hook,.err,.hint,.gate-note,.drag-tip{font-size:13px}
+  .todo .btn.small{min-width:44px}
+}
+@media (min-width:1000px){
+  .grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .board4{display:grid;grid-template-columns:repeat(4,1fr);overflow:visible}
+  .board4 .col{flex:none;max-width:none}
+}
+
+/* ฉาก 3 มิติ: perspective ที่ตัวห่อ, เอียงทั้งกริดตามเมาส์, แต่ละหน้าต่างลอยที่ระดับ translateZ ต่างกัน */
+.win{--z:var(--zb,0px);--dx:0px;--dy:0px;box-shadow:0 2px 6px #0006,0 8px 22px #0004}
+.win.front{border-color:var(--accent)}
+.win.front .win-h{background:#32293f}
+.grip{border:1px solid var(--line-solid);background:var(--bg);color:var(--muted);border-radius:8px;padding:2px 9px;font-size:12px;min-height:30px;touch-action:none;cursor:grab;display:none}
+.drag-tip{color:var(--muted);font-size:12px;margin:0}
+@media (min-width:1000px){
+  .stage{perspective:1700px;perspective-origin:50% 30%;padding:12px 0 30px}
+  .grid{transform-style:preserve-3d;transform:rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .18s ease-out;will-change:transform}
+  .win{transform:translate(var(--dx),var(--dy)) translateZ(var(--z));transform-style:flat;transition:box-shadow .2s,border-color .2s;
+    box-shadow:0 calc(4px + var(--z)*.35) calc(10px + var(--z)*.9) #000a,0 1px 0 #ffffff12 inset}
+  .win.front{--z:72px;z-index:5;box-shadow:0 30px 60px #000c,0 0 0 1px var(--accent)}
+  .win:hover:not(.front){--z:calc(var(--zb,0px) + 18px)}
+  .win.dragging{z-index:9;transition:none;box-shadow:0 40px 70px #000d}
+  .grid.dragmode{transition:none;transform:none}
+  .grip{display:inline-block}
+}
+@media (prefers-reduced-motion:reduce){
+  .grid,.win{transition:none!important}
+}
+
+/* เชื่อมต่อ social-poster */
+.sp-warn{font-size:12px;color:var(--accent);margin:0}
+.sp-status{font-size:13px;min-height:20px;margin:0;overflow-wrap:anywhere}
+.sp-status.bad{color:var(--danger)}.sp-status.good{color:var(--done)}
+.origin{display:flex;gap:8px;align-items:center}
+.origin code{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line-solid);border-radius:8px;padding:6px 10px;font-size:12px;overflow-wrap:anywhere}
+.chlist{display:flex;flex-direction:column;gap:6px;margin:0;padding:0;list-style:none}
+.chlist li{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--raised);border:1px solid var(--line-solid);border-radius:10px;padding:8px 12px;overflow-wrap:anywhere}
+.chk{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--bg);border:1px solid var(--line-solid);border-radius:10px;min-height:42px;cursor:pointer;overflow-wrap:anywhere}
+.chk input{width:20px;height:20px;accent-color:var(--accent);flex:none}
+.sumbox{background:var(--bg);border:1px solid var(--accent);border-radius:10px;padding:10px 12px;font-size:14px;overflow-wrap:anywhere}
+.sumbox ul{margin:6px 0 0;padding-left:18px}
+.hintlist{color:var(--danger);font-size:13px;margin:0;padding-left:18px}
+.resrow{display:flex;gap:8px;align-items:flex-start;padding:8px 12px;border-radius:10px;border:1px solid var(--line-solid);background:var(--raised);overflow-wrap:anywhere}
+.resrow b{flex:none}
+.resrow.ok b{color:var(--done)}.resrow.fail b{color:var(--danger)}
+.bar{height:8px;border-radius:4px;background:#ffffff14;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .15s}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+</head>
+<body class="locked">
+<div class="gate" id="gate">
+  <form class="gate-card" id="gateForm" novalidate>
+    <h1 id="gateTitle">เข้าสู่ระบบ</h1>
+    <p class="hint" id="gateHint"></p>
+    <div class="row">
+      <label for="gUser">ชื่อผู้ใช้</label>
+      <input class="field" id="gUser" autocomplete="username" maxlength="40" autocapitalize="none">
+    </div>
+    <div class="row">
+      <label for="gPass">รหัสผ่าน</label>
+      <div class="pw">
+        <input class="field" id="gPass" type="password" autocomplete="current-password" maxlength="100">
+        <button type="button" class="btn" id="gShow" aria-pressed="false">แสดง</button>
+      </div>
+    </div>
+    <div class="row" id="gConfRow" hidden>
+      <label for="gConf">ยืนยันรหัสผ่านอีกครั้ง</label>
+      <input class="field" id="gConf" type="password" autocomplete="new-password" maxlength="100">
+    </div>
+    <div class="err" id="gErr" role="alert"></div>
+    <button class="btn primary" type="submit" id="gSubmit">เข้าสู่ระบบ</button>
+    <p class="gate-note">หมายเหตุ นี่เป็นการล็อกฝั่งเบราว์เซอร์เพื่อกันคนเปิดดูผ่านหน้าจอเท่านั้น ไม่ใช่ระบบความปลอดภัยจริง อย่าใช้รหัสผ่านที่ใช้กับบริการสำคัญ</p>
+  </form>
+</div>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>แดชบอร์ดทำคลิป</h1>
+      <p class="sub">แผงควบคุมคลิปสั้น TikTok, Reels และ Shorts แบ่งเป็น 10 หน้าต่าง กดขยายเพื่อดูเต็มแถว</p>
+    </div>
+    <div class="acts"><button class="btn" id="btnOut" type="button">ออกจากระบบ</button></div>
+  </header>
+  <section class="tools" aria-label="ค้นหาและกรอง">
+    <input class="search" id="q" type="search" placeholder="ค้นหาชื่อคลิป ฮุค สคริปต์ หรือแฮชแท็ก" aria-label="ค้นหาคลิป">
+    <div class="chips" id="chips" role="group" aria-label="กรองตามแพลตฟอร์ม"></div>
+  </section>
+  <div class="stage" id="stage"><main class="grid" id="grid"></main></div>
+  <p class="drag-tip" id="dragTip"></p>
+  <p class="note" id="storeNote"></p>
+</div>
+
+<div class="overlay" id="ovDet" role="dialog" aria-modal="true" aria-labelledby="detTitle">
+  <div class="sheet" id="detBody"></div>
+</div>
+<div class="overlay" id="ovSend" role="dialog" aria-modal="true" aria-labelledby="sdTitle">
+  <div class="sheet" id="sdBody"></div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  "use strict";
+  var KEY="clip-dashboard-v2";
+  var STAGES=[
+    {id:"idea",name:"ไอเดีย",c:"var(--idea)"},
+    {id:"script",name:"เขียนสคริปต์",c:"var(--script)"},
+    {id:"edit",name:"ตัดต่อ",c:"var(--edit)"},
+    {id:"done",name:"โพสต์แล้ว",c:"var(--done)"}
+  ];
+  var PLATS=["TikTok","Reels","Shorts"];
+  var STEPS=["คิดฮุคและมุมเล่าเรื่อง","เขียนสคริปต์","เตรียมฉากและอุปกรณ์","ถ่ายทำ","ตัดต่อและใส่จังหวะ","ใส่ซับไตเติลและเสียง","ทำภาพปก","เขียนแคปชันและแฮชแท็ก","โพสต์และตอบคอมเมนต์แรก"];
+  var WINS=[
+    {id:"sum",t:"สรุปตัวเลข"},
+    {id:"board",t:"บอร์ดสถานะคลิป"},
+    {id:"add",t:"เพิ่มคลิปเร็ว"},
+    {id:"queue",t:"คิวโพสต์"},
+    {id:"plat",t:"สถานะแพลตฟอร์ม",sub:"สถานะที่บันทึกเอง ไม่ใช่ข้อมูลสด หน้านี้ดึงข้อมูลจากแพลตฟอร์มไม่ได้ ตั้งค่าด้วยมือเท่านั้น"},
+    {id:"app",t:"สถานะแอป social-poster",sub:"สถานะที่บันทึกเอง ไม่ใช่ข้อมูลสด ตั้งค่าด้วยมือเท่านั้น ผลทดสอบการเชื่อมต่อจริงอยู่ในหน้าต่างถัดไป"},
+    {id:"sp",t:"เชื่อมต่อ social-poster"},
+    {id:"check",t:"เช็กลิสต์ขั้นตอนทำคลิป"},
+    {id:"lib",t:"คลังสคริปต์และแฮชแท็ก"},
+    {id:"notes",t:"บันทึกและงานที่ต้องทำ"}
+  ];
+  var PLAT_ITEMS=[["yt","ยูทูบ"],["fb","เฟซบุ๊ก"],["tt","ติ๊กต็อก"]];
+  var APP_ITEMS=[["a1","หน้าเว็บแอปเปิดใช้งานได้"],["a2","การโพสต์ไปหลายแพลตฟอร์มพร้อมกัน"],["a3","การเชื่อมต่อบัญชีแพลตฟอร์ม"]];
+  var ST_LABEL={none:"ยังไม่ตั้ง",ok:"ปกติ",watch:"ควรดู",bad:"มีปัญหา"};
+
+  var memory=null,usingMemory=false,delArmed=null,delTimer=null;
+  var SP_URL_KEY="clip-dashboard-sp-url",TOKEN_KEY="clip-dashboard-sp-token",MAX_BYTES=500*1024*1024;
+  var tokenMem="",spChannels=[],spConnected=false,spXhr=null,spBusy=false,spCancelled=false,sdClip=null,sdFile=null,sdPrev=null;
+  var state={clips:[],status:{},todos:[],note:"",order:[],q:"",plat:"ทั้งหมด",openId:null,tab:"idea",ckId:null,wide:{},front:null};
+
+  function p2(n){return n<10?"0"+n:""+n;}
+  function ds(d){return d.getFullYear()+"-"+p2(d.getMonth()+1)+"-"+p2(d.getDate());}
+  function today(){return ds(new Date());}
+  function addDays(n){var d=new Date();d.setDate(d.getDate()+n);return ds(d);}
+  function uid(){return "c"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+  function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m];});}
+  function steps(n){var a=[];for(var i=0;i<STEPS.length;i++)a.push(i<n);return a;}
+  function $(id){return document.getElementById(id);}
+
+  function sample(){
+    return [
+      {id:uid(),sample:true,title:"3 วิธีลดค่าไฟหน้าร้อน",plat:"TikTok",stage:"edit",date:addDays(1),
+       hook:"ค่าไฟเดือนนี้ลดไปครึ่งหนึ่ง เพราะผมเลิกทำเรื่องนี้",
+       script:"ฉาก 1: โชว์บิลค่าไฟเดือนที่แล้ว\nฉาก 2: วิธีที่ 1 ตั้งแอร์ 26 องศา เปิดพัดลมช่วย\nฉาก 3: วิธีที่ 2 ถอดปลั๊กอุปกรณ์ที่ไม่ใช้\nฉาก 4: วิธีที่ 3 ล้างแอร์ทุก 6 เดือน\nปิดท้าย: ฝากกดติดตามเพื่อรับเคล็ดลับต่อ",
+       tags:"#ประหยัดไฟ #ค่าไฟ #เคล็ดลับชีวิต",checks:steps(5)},
+      {id:uid(),sample:true,title:"รีวิวหูฟังไร้สายราคาไม่ถึงพัน",plat:"Reels",stage:"script",date:addDays(4),
+       hook:"หูฟังตัวละ 790 บาท ฟังดีกว่าที่คิดไหม",
+       script:"เปิดกล่อง 5 วินาที\nทดสอบเสียงเพลงและเสียงโทร\nทดสอบแบตเตอรี่ 3 ชั่วโมง\nสรุปข้อดีข้อเสียอย่างละ 2 ข้อ",
+       tags:"#รีวิวหูฟัง #ของดีราคาถูก #รีวิวจริง",checks:steps(2)},
+      {id:uid(),sample:true,title:"เล่าประสบการณ์ครั้งแรกขึ้นเครื่องบินคนเดียว",plat:"Shorts",stage:"idea",date:"",
+       hook:"วันนั้นผมเกือบตกเครื่อง เพราะลืมเช็กประตูขึ้นเครื่อง",
+       script:"",tags:"#เที่ยวคนเดียว #เล่าเรื่อง #เคล็ดลับเดินทาง",checks:steps(0)},
+      {id:uid(),sample:true,title:"สูตรไข่เจียวฟูกรอบใน 1 นาที",plat:"TikTok",stage:"done",date:addDays(-3),
+       hook:"ไข่เจียวฟูแบบร้านอาหาร ทำเองได้ด้วยของในครัว",
+       script:"ตีไข่ใส่น้ำปลา 1 ช้อนชา\nเติมแป้งมัน 1 ช้อนชาให้กรอบ\nน้ำมันร้อนจัด เทไข่จากที่สูง\nพลิกครั้งเดียวแล้วเสิร์ฟ",
+       tags:"#สูตรอาหาร #ไข่เจียว #ทำอาหารง่ายๆ",checks:steps(9)}
+    ];
+  }
+  function defStatus(){var o={};PLAT_ITEMS.concat(APP_ITEMS).forEach(function(i){o[i[0]]={v:"none",d:"",n:""};});return o;}
+  function defOrder(){return WINS.map(function(w){return w.id;});}
+
+  function strOr(v,f){return typeof v==="string"?v:(typeof v==="number"?String(v):f);}
+  function normSp(o){
+    if(!o||typeof o!=="object"||(o.mode!=="draft"&&o.mode!=="schedule"))return null;
+    return {mode:o.mode,at:strOr(o.at,"").slice(0,40),names:Array.isArray(o.names)?o.names.map(function(n){return String(n).slice(0,60);}).slice(0,20):[]};
+  }
+  function spTag(c){
+    if(!c||!c.sp)return "";
+    return '<span class="tag">'+(c.sp.mode==="draft"?"ส่งฉบับร่างไป social-poster แล้ว":"ตั้งเวลาใน social-poster แล้ว")+'</span>';
+  }
+  function normClip(c){
+    var ck=Array.isArray(c.checks)?c.checks.slice(0,STEPS.length).map(function(x){return !!x;}):[];
+    while(ck.length<STEPS.length)ck.push(false);
+    var pl=PLATS.indexOf(c.plat)>=0?c.plat:"TikTok",sg=stageOf(c.stage).id;
+    return {id:strOr(c.id,uid()),sample:c.sample===true,title:strOr(c.title,"(ไม่มีชื่อ)"),plat:pl,stage:sg,date:strOr(c.date,""),
+      hook:strOr(c.hook,""),script:strOr(c.script,""),tags:strOr(c.tags,""),checks:ck,sp:normSp(c.sp)};
+  }
+  /* ย้ายข้อมูลจากคีย์รุ่นเก่า (ถ้ามี) ครั้งเดียว ข้ามคลิปตัวอย่างเก่าที่ไม่มีป้ายตัวอย่าง ไม่ลบข้อมูลเดิม */
+  var OLD_KEYS=["clip-dashboard-v1","clip-dashboard"];
+  var OLD_SAMPLES=["3 วิธีลดค่าไฟหน้าร้อน","รีวิวหูฟังไร้สายราคาไม่ถึงพัน","เล่าประสบการณ์ครั้งแรกขึ้นเครื่องบินคนเดียว","สูตรไข่เจียวฟูกรอบใน 1 นาที"];
+  function migrateOld(){
+    for(var i=0;i<OLD_KEYS.length;i++){
+      var r=null,o=null;
+      try{r=window.localStorage.getItem(OLD_KEYS[i]);o=r?JSON.parse(r):null;}catch(e){o=null;}
+      if(!o)continue;
+      var list=Array.isArray(o)?o:(Array.isArray(o.clips)?o.clips:null);
+      if(!list)continue;
+      var real=list.filter(function(c){return c&&typeof c==="object"&&c.sample!==true&&OLD_SAMPLES.indexOf(c.title)<0;});
+      if(!real.length)continue;
+      return {clips:real,status:null,todos:Array.isArray(o.todos)?o.todos.filter(function(t){return t&&t.sample!==true;}):[],note:strOr(o.note,""),order:null};
+    }
+    return null;
+  }
+  function load(){
+    var raw=null;
+    try{raw=window.localStorage.getItem(KEY);}catch(e){usingMemory=true;}
+    var d=null;
+    if(!usingMemory&&raw){try{d=JSON.parse(raw);}catch(e2){d=null;}}
+    if(!d&&usingMemory&&memory)d=memory;
+    if(!d&&!usingMemory&&!raw)d=migrateOld();
+    if(!d||!Array.isArray(d.clips)){
+      d={clips:sample(),status:defStatus(),todos:[
+        {id:uid(),sample:true,text:"ถ่ายฉากเพิ่มสำหรับคลิปค่าไฟ 2 ฉาก",done:false},
+        {id:uid(),sample:true,text:"เลือกเพลงประกอบคลิปรีวิวหูฟัง",done:false}],note:"",order:defOrder()};
+    }
+    var st=defStatus();
+    if(d.status)for(var k in st){var o=d.status[k];if(o&&typeof o==="object"){st[k]={v:ST_LABEL[o.v]?String(o.v):"none",d:typeof o.d==="string"?o.d:"",n:typeof o.n==="string"?o.n:""};}}
+    d.clips=d.clips.filter(function(c){return c&&typeof c==="object";}).map(normClip);
+    if(Array.isArray(d.todos))d.todos=d.todos.filter(function(t){return t&&typeof t==="object";}).map(function(t){return {id:strOr(t.id,uid()),sample:t.sample===true,text:strOr(t.text,""),done:t.done===true};});
+    state.clips=d.clips;state.status=st;state.todos=Array.isArray(d.todos)?d.todos:[];state.note=d.note||"";
+    var ord=Array.isArray(d.order)?d.order:[];
+    var ok=ord.length===WINS.length&&defOrder().every(function(i){return ord.indexOf(i)>=0;});
+    state.order=ok?ord:defOrder();
+  }
+  function save(){
+    var d={clips:state.clips,status:state.status,todos:state.todos,note:state.note,order:state.order};
+    memory=d;
+    try{window.localStorage.setItem(KEY,JSON.stringify(d));usingMemory=false;}catch(e){usingMemory=true;}
+    renderNote();
+  }
+  function renderNote(){
+    $("storeNote").textContent=usingMemory
+      ?"เบราว์เซอร์นี้เก็บข้อมูลถาวรไม่ได้ ข้อมูลจะอยู่จนกว่าจะปิดหรือรีเฟรชหน้านี้"
+      :"ข้อมูลและลำดับหน้าต่างบันทึกในเบราว์เซอร์เครื่องนี้โดยอัตโนมัติ";
+  }
+
+  function stageOf(id){for(var i=0;i<STAGES.length;i++)if(STAGES[i].id===id)return STAGES[i];return STAGES[0];}
+  function stageIdx(id){for(var i=0;i<STAGES.length;i++)if(STAGES[i].id===id)return i;return 0;}
+  function find(id){for(var i=0;i<state.clips.length;i++)if(state.clips[i].id===id)return state.clips[i];return null;}
+  function fmtDate(s){
+    if(!s)return "ยังไม่กำหนดวัน";
+    var m=String(s).split("-");if(m.length!==3||!/^\d{4}$/.test(m[0])||!(parseInt(m[1],10)>=1&&parseInt(m[1],10)<=12))return esc(s);
+    var mo=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+    return parseInt(m[2],10)+" "+mo[parseInt(m[1],10)-1]+" "+(parseInt(m[0],10)+543);
+  }
+  function doneCount(c){var n=0;(c.checks||[]).forEach(function(x){if(x)n++;});return n;}
+  function sampleTag(o){return o&&o.sample?'<span class="tag sample">ตัวอย่าง</span>':"";}
+  function matches(c){
+    if(state.plat!=="ทั้งหมด"&&c.plat!==state.plat)return false;
+    var q=state.q.trim().toLowerCase();
+    if(!q)return true;
+    return (c.title+" "+c.hook+" "+c.script+" "+c.tags).toLowerCase().indexOf(q)>=0;
+  }
+
+  /* โครงหน้าต่าง */
+  function buildGrid(){
+    var g=$("grid"),h="";
+    WINS.forEach(function(w,i){
+      h+='<section class="win" id="w-'+w.id+'" data-win="'+w.id+'" aria-labelledby="t-'+w.id+'">'
+        +'<header class="win-h"><span class="num" aria-hidden="true"></span><h2 id="t-'+w.id+'">'+esc(w.t)+'</h2>'
+        +'<button type="button" class="grip" data-grip="'+w.id+'" aria-label="จัดเรียงหน้าต่าง '+esc(w.t)+' ลากหรือกดลูกศรซ้ายขวา">ลาก</button>'
+        +'<button type="button" class="btn small" data-toggle="'+w.id+'" aria-expanded="false">ขยาย</button></header>'
+        +(w.sub?'<p class="win-sub warn">'+w.sub+'</p>':'')
+        +'<div class="win-b" id="b-'+w.id+'"></div></section>';
+    });
+    g.innerHTML=h;
+    $("b-add").innerHTML=
+      '<form id="form" class="stack" novalidate>'
+      +'<div class="row"><label for="fTitle">ชื่อคลิป</label><input class="field" id="fTitle" maxlength="120" placeholder="เช่น 3 วิธีประหยัดค่าไฟหน้าร้อน" autocomplete="off"></div>'
+      +'<div class="two"><div class="row"><label for="fPlat">แพลตฟอร์ม</label><select class="field" id="fPlat">'
+      +PLATS.map(function(p){return '<option value="'+p+'">'+p+'</option>';}).join("")+'</select></div>'
+      +'<div class="row"><label for="fDate">วันที่จะโพสต์</label><input class="field" id="fDate" type="date"></div></div>'
+      +'<div class="row"><label for="fHook">ฮุค</label><input class="field" id="fHook" maxlength="200" placeholder="ประโยคเปิดใน 3 วินาทีแรก" autocomplete="off"></div>'
+      +'<div class="row"><label for="fScript">สคริปต์</label><textarea class="field" id="fScript" placeholder="เขียนบทพูดหรือลำดับภาพคร่าว ๆ"></textarea></div>'
+      +'<div class="row"><label for="fTags">แฮชแท็ก</label><input class="field" id="fTags" placeholder="#ประหยัดไฟ #ไอเดียบ้าน" autocomplete="off"></div>'
+      +'<div class="err" id="fErr" role="alert"></div>'
+      +'<button class="btn primary" type="submit">บันทึกคลิป</button></form>';
+    $("b-notes").innerHTML=
+      '<form class="inline" id="todoForm"><input class="field" id="tdText" maxlength="120" placeholder="เพิ่มงานที่ต้องทำ" aria-label="งานที่ต้องทำ" autocomplete="off"><button class="btn primary" type="submit">เพิ่ม</button></form>'
+      +'<div class="stack" id="todoList"></div>'
+      +'<div class="row"><label for="noteArea">บันทึกอิสระ</label><textarea class="field" id="noteArea" placeholder="จดไอเดียหรือข้อความที่ต้องจำ"></textarea></div>';
+    $("noteArea").value=state.note;
+    $("b-sp").innerHTML=
+      '<p class="sp-warn">ใช้เฉพาะโทเคนแดชบอร์ดที่จำกัดสิทธิ์ (ดู สร้างฉบับร่าง ตั้งเวลา) ห้ามวางโทเคนแอดมิน โทเคนเก็บชั่วคราวในแท็บนี้เท่านั้น และหายเมื่อปิดแท็บหรือออกจากระบบ</p>'
+      +'<div class="row"><label for="spBase">ที่อยู่ฐานของแอป</label><input class="field" id="spBase" inputmode="url" autocomplete="off" autocapitalize="none" placeholder="https://ชื่อแอป.up.railway.app" maxlength="200"></div>'
+      +'<div class="row"><label for="spToken">โทเคนแดชบอร์ด</label><div class="pw"><input class="field" id="spToken" type="password" autocomplete="off" maxlength="300"><button type="button" class="btn" id="spShow" aria-pressed="false">แสดง</button></div></div>'
+      +'<button type="button" class="btn primary" id="spTest">ทดสอบการเชื่อมต่อ</button>'
+      +'<p class="sp-status" id="spStatus" role="status" aria-live="polite">ยังไม่ได้ทดสอบ</p>'
+      +'<ul class="chlist" id="spChannels" aria-label="ช่องที่พบ"></ul>'
+      +'<p class="note" id="spSame" hidden>หน้านี้เปิดจากโดเมนเดียวกับแอป ไม่ต้องตั้ง CORS_ORIGINS แต่ยังต้องใช้โทเคนแดชบอร์ด (DASHBOARD_TOKEN) ทุกครั้งที่เรียก API</p>'
+      +'<div class="row" id="spCorsRow"><span class="lab">ค่า origin ของหน้านี้ (เฉพาะกรณีเปิดข้ามโดเมน)</span><div class="origin"><code id="spOrigin"></code><button type="button" class="btn small" id="spCopyOrigin">คัดลอก</button></div>'
+      +'<p class="note">ถ้าเปิดหน้านี้จากโดเมนอื่น ให้นำค่านี้ไปใส่ใน CORS_ORIGINS ของบริการบน Railway แล้วดีพลอยใหม่ มิฉะนั้นเบราว์เซอร์จะไม่ยอมให้หน้านี้เรียกแอป</p></div>'
+      +'<div class="row"><span class="lab">ส่งคลิปขึ้นแอป (ฉบับร่างหรือตั้งเวลาเท่านั้น)</span><div class="stack" id="spClips"></div></div>';
+    spInit();
+    applyOrder();
+  }
+  function applyOrder(){
+    var g=$("grid");
+    state.order.forEach(function(id,i){
+      var el=$("w-"+id);g.appendChild(el);
+      el.style.order=i;
+      var z=(i%3)*14;
+      el.style.setProperty("--zb",z+"px");
+      el.querySelector(".num").textContent=i+1;
+    });
+  }
+  function setFront(id){
+    state.front=id;
+    state.order.forEach(function(w,i){
+      var el=$("w-"+w);var on=w===id;
+      el.classList.toggle("front",on);
+    });
+  }
+
+  /* วาดแต่ละหน้าต่าง */
+  function rSum(){
+    var all=state.clips.length,making=0,wait=0,posted=0,smp=0;
+    state.clips.forEach(function(c){
+      if(c.sample)smp++;
+      if(c.stage==="script"||c.stage==="edit")making++;
+      if(c.stage==="done")posted++;else if(c.date)wait++;
+    });
+    var items=[["คลิปทั้งหมด",all,"var(--text)"],["กำลังทำ",making,"var(--script)"],["รอโพสต์",wait,"var(--accent)"],["โพสต์แล้ว",posted,"var(--done)"]];
+    $("b-sum").innerHTML='<div class="mini">'+items.map(function(i){
+      return '<div class="stat" style="--c:'+i[2]+'"><span class="n">'+i[1]+'</span><span class="l">'+i[0]+'</span></div>';
+    }).join("")+'</div><p class="note">กำลังทำ คือขั้นเขียนสคริปต์และตัดต่อ รอโพสต์ คือยังไม่โพสต์และตั้งวันไว้แล้ว</p>'
+      +(smp?'<p class="note"><span class="tag sample">ตัวอย่าง</span> ตัวเลขนี้นับรวมคลิปตัวอย่าง '+smp+' คลิป ที่ไม่ใช่งานจริงของคุณ ลบคลิปตัวอย่างออกเพื่อให้ตัวเลขเป็นของจริง</p>':"");
+  }
+  function cardHtml(c){
+    var st=stageOf(c.stage),i=stageIdx(c.stage),n=doneCount(c),pct=Math.round(n/STEPS.length*100);
+    var late=c.date&&c.stage!=="done"&&c.date<today();
+    var h='<article class="card" style="--c:'+st.c+'" data-id="'+esc(c.id)+'"><h3>'+esc(c.title)+'</h3>';
+    h+='<div class="meta"><span class="tag">'+esc(c.plat)+'</span>'+sampleTag(c)+spTag(c)+'<span class="'+(late?"late":"")+'">'+(late?"เลยกำหนด ":"")+fmtDate(c.date)+'</span></div>';
+    if(c.hook)h+='<div class="hook">'+esc(c.hook)+'</div>';
+    h+='<div class="prog" aria-hidden="true"><i style="width:'+pct+'%"></i></div><div class="prog-t"><span>ขั้นตอน</span><span>'+n+' จาก '+STEPS.length+'</span></div><div class="acts">';
+    h+='<button type="button" class="btn small" data-act="open">เปิดดู</button>';
+    if(i>0)h+='<button type="button" class="btn small" data-act="prev" aria-label="ย้ายกลับไปขั้น '+STAGES[i-1].name+'">ย้อนกลับ</button>';
+    if(i<STAGES.length-1)h+='<button type="button" class="btn small primary" data-act="next" aria-label="ย้ายไปขั้น '+STAGES[i+1].name+'">ไปขั้น'+STAGES[i+1].name+'</button>';
+    return h+'<button type="button" class="btn small danger" data-act="del">ลบ</button></div></article>';
+  }
+  function colHtml(s){
+    var list=state.clips.filter(function(c){return c.stage===s.id&&matches(c);});
+    var total=state.clips.filter(function(c){return c.stage===s.id;}).length;
+    var body=list.length?list.map(cardHtml).join(""):'<div class="empty">'+(total?"ไม่พบคลิปที่ตรงกับการค้นหา":"ยังไม่มีคลิปในขั้นนี้")+'</div>';
+    return '<section class="col" style="--c:'+s.c+'" aria-label="'+s.name+'"><div class="col-h"><span class="dot"></span><h2>'+s.name+'</h2><span class="cnt">'+list.length+'</span></div>'+body+'</section>';
+  }
+  function rBoard(){
+    var b=$("b-board");delArmed=null;
+    if(state.wide.board){
+      b.innerHTML='<div class="board4">'+STAGES.map(colHtml).join("")+'</div>';
+    }else{
+      var tabs=STAGES.map(function(s){
+        var n=state.clips.filter(function(c){return c.stage===s.id&&matches(c);}).length;
+        return '<button type="button" class="tab" style="--c:'+s.c+'" data-tab="'+s.id+'" aria-pressed="'+(state.tab===s.id)+'">'+s.name+' '+n+'</button>';
+      }).join("");
+      var s=stageOf(state.tab),list=state.clips.filter(function(c){return c.stage===s.id&&matches(c);});
+      b.innerHTML='<div class="tabs" role="group" aria-label="เลือกขั้นสถานะ">'+tabs+'</div>'
+        +(list.length?list.map(cardHtml).join(""):'<div class="empty">ไม่มีคลิปในขั้นนี้ กด ขยาย เพื่อดูครบ 4 คอลัมน์</div>');
+    }
+  }
+  function rQueue(){
+    var t=today(),wk=addDays(7),g={late:[],today:[],week:[],later:[]},nod=0;
+    state.clips.filter(function(c){return c.stage!=="done"&&matches(c);}).forEach(function(c){
+      if(!c.date){nod++;return;}
+      if(c.date<t)g.late.push(c);else if(c.date===t)g.today.push(c);else if(c.date<=wk)g.week.push(c);else g.later.push(c);
+    });
+    var defs=[["late","เลยกำหนด"],["today","วันนี้"],["week","ภายใน 7 วัน"],["later","หลังจากนั้น"]],h="",any=false;
+    defs.forEach(function(d){
+      var l=g[d[0]].sort(function(a,b){return a.date<b.date?-1:1;});
+      if(!l.length)return;any=true;
+      h+='<div class="qgroup"><h3>'+d[1]+' ('+l.length+')</h3><div class="stack">'+l.map(function(c){
+        return '<button type="button" class="qitem" data-open="'+esc(c.id)+'"><b>'+esc(c.title)+'</b><span class="meta"><span class="tag">'+esc(c.plat)+'</span>'+sampleTag(c)+spTag(c)+'<span class="'+(d[0]==="late"?"late":"")+'">'+fmtDate(c.date)+'</span></span></button>';
+      }).join("")+'</div></div>';
+    });
+    if(!any)h='<div class="empty">ไม่มีคลิปที่รอโพสต์พร้อมวันที่</div>';
+    if(nod)h+='<p class="note">มี '+nod+' คลิปที่ยังไม่กำหนดวันโพสต์</p>';
+    $("b-queue").innerHTML=h;
+  }
+  function manualHtml(items){
+    return items.map(function(it){
+      var s=state.status[it[0]],k=it[0];
+      var chips=["ok","watch","bad"].map(function(v){
+        return '<button type="button" class="stb '+v+'" data-st="'+k+'" data-val="'+v+'" aria-pressed="'+(s.v===v)+'">'+ST_LABEL[v]+'</button>';
+      }).join("");
+      return '<div class="mrow"><div class="nm"><span>'+it[1]+'</span><span class="note">'+(s.v==="none"?"ยังไม่ตั้ง":"ตั้งเองเมื่อ "+fmtDate(s.d))+'</span></div>'
+        +'<div class="st-chips" role="group" aria-label="สถานะ '+it[1]+'">'+chips+'</div>'
+        +'<input class="field" data-note="'+k+'" maxlength="160" placeholder="โน้ต (ไม่บังคับ)" aria-label="โน้ตของ '+it[1]+'" value="'+esc(s.n)+'"></div>';
+    }).join("");
+  }
+  function rPlat(){$("b-plat").innerHTML=manualHtml(PLAT_ITEMS);}
+  function rApp(){$("b-app").innerHTML=manualHtml(APP_ITEMS);}
+  function rCheck(){
+    if(!state.clips.length){$("b-check").innerHTML='<div class="empty">ยังไม่มีคลิป เพิ่มคลิปก่อนเพื่อใช้เช็กลิสต์</div>';return;}
+    if(!find(state.ckId)){var f=state.clips.filter(function(c){return c.stage!=="done";})[0]||state.clips[0];state.ckId=f.id;}
+    var c=find(state.ckId);
+    var h='<div class="row"><label for="ckSel">เลือกคลิป</label><select class="field" id="ckSel">'
+      +state.clips.map(function(x){return '<option value="'+esc(x.id)+'"'+(x.id===c.id?" selected":"")+'>'+esc(x.title)+(x.sample?" (ตัวอย่าง)":"")+'</option>';}).join("")+'</select></div>';
+    h+='<div class="prog-t"><span>'+(c.sample?"ตัวอย่าง":"ความคืบหน้า")+'</span><span id="ckCnt">'+doneCount(c)+' จาก '+STEPS.length+'</span></div><div class="check">';
+    STEPS.forEach(function(s,i){
+      var on=!!(c.checks&&c.checks[i]);
+      h+='<label><input type="checkbox" data-ck="'+i+'"'+(on?" checked":"")+'><span class="'+(on?"off":"")+'">'+s+'</span></label>';
+    });
+    $("b-check").innerHTML=h+'</div>';
+  }
+  function tagsOf(c){return (c.tags||"").split(/\s+/).filter(function(t){return t.charAt(0)==="#"&&t.length>1;});}
+  function rLib(){
+    var list=state.clips.filter(matches),all=[];
+    list.forEach(function(c){tagsOf(c).forEach(function(t){if(all.indexOf(t)<0)all.push(t);});});
+    var h='<div class="copyrow"><span class="note">แฮชแท็กไม่ซ้ำ '+all.length+' รายการ</span><button type="button" class="btn small" data-copyall="1">คัดลอกแฮชแท็กทั้งหมด</button></div>';
+    if(!list.length)h+='<div class="empty">ไม่พบคลิปที่ตรงกับการค้นหา</div>';
+    list.forEach(function(c){
+      h+='<div class="libitem"><b>'+esc(c.title)+'</b><div class="meta"><span class="tag">'+esc(c.plat)+'</span>'+sampleTag(c)+'</div>'
+        +'<div class="acts"><button type="button" class="btn small" data-copyclip="'+esc(c.id)+'" data-k="script"'+(c.script?"":" disabled")+'>คัดลอกสคริปต์</button>'
+        +'<button type="button" class="btn small" data-copyclip="'+esc(c.id)+'" data-k="tags"'+(c.tags?"":" disabled")+'>คัดลอกแฮชแท็ก</button></div></div>';
+    });
+    $("b-lib").innerHTML=h;
+  }
+  function rTodos(){
+    $("todoList").innerHTML=state.todos.length?state.todos.map(function(t){
+      return '<div class="todo"><label><input type="checkbox" data-td="'+esc(t.id)+'"'+(t.done?" checked":"")+'><span class="'+(t.done?"off":"")+'">'+esc(t.text)+'</span>'+sampleTag(t)+'</label><button type="button" class="btn small danger" data-tdel="'+esc(t.id)+'" aria-label="ลบงาน '+esc(t.text)+'">ลบ</button></div>';
+    }).join(""):'<div class="empty">ยังไม่มีงานที่ต้องทำ</div>';
+  }
+  function renderClips(skipCheck){rSum();rBoard();rQueue();if(!skipCheck)rCheck();rLib();rSpClips();}
+  function renderChips(){
+    $("chips").innerHTML=["ทั้งหมด"].concat(PLATS).map(function(p){
+      return '<button type="button" class="chip" data-plat="'+p+'" aria-pressed="'+(state.plat===p)+'">'+p+'</button>';
+    }).join("");
+  }
+  function renderAll(){renderChips();renderClips();rPlat();rApp();rTodos();}
+
+  /* คัดลอก */
+  var toastTimer=null;
+  function toast(msg){var t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(function(){t.classList.remove("show");},1800);}
+  function fallbackCopy(text){
+    var ta=document.createElement("textarea");ta.value=text;ta.setAttribute("readonly","");
+    ta.style.position="fixed";ta.style.top="0";ta.style.opacity="0";
+    document.body.appendChild(ta);ta.select();
+    var ok=false;try{ok=document.execCommand("copy");}catch(e){}
+    document.body.removeChild(ta);return ok;
+  }
+  function copyText(text,label){
+    if(!text){toast("ยังไม่มี"+label+"ให้คัดลอก");return;}
+    function done(ok){toast(ok?"คัดลอก"+label+"แล้ว":"คัดลอกไม่สำเร็จ ลองกดค้างที่ข้อความแล้วเลือกคัดลอก");}
+    try{
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(function(){done(true);},function(){done(fallbackCopy(text));});
+        return;
+      }
+    }catch(e){}
+    done(fallbackCopy(text));
+  }
+
+  /* หน้าต่างรายละเอียด */
+  function openDetail(id){
+    var c=find(id);if(!c)return;
+    state.openId=id;
+    var st=stageOf(c.stage);
+    var h='<h2 id="detTitle">'+esc(c.title)+'</h2>';
+    h+='<div class="meta"><span class="tag" style="background:'+st.c+';color:#1a1424;font-weight:600">'+st.name+'</span><span class="tag">'+esc(c.plat)+'</span>'+sampleTag(c)+'<span>โพสต์ '+fmtDate(c.date)+'</span></div>';
+    h+='<div class="row"><span class="lab">ฮุค</span><div class="box'+(c.hook?"":" none")+'">'+(c.hook?esc(c.hook):"ยังไม่ได้เขียนฮุค")+'</div></div>';
+    h+='<div class="row"><div class="copyrow"><span class="lab">สคริปต์</span><button type="button" class="btn small" data-copy="script">คัดลอกสคริปต์</button></div><div class="box'+(c.script?"":" none")+'">'+(c.script?esc(c.script):"ยังไม่ได้เขียนสคริปต์")+'</div></div>';
+    h+='<div class="row"><div class="copyrow"><span class="lab">แฮชแท็ก</span><button type="button" class="btn small" data-copy="tags">คัดลอกแฮชแท็ก</button></div><div class="box'+(c.tags?"":" none")+'">'+(c.tags?esc(c.tags):"ยังไม่มีแฮชแท็ก")+'</div></div>';
+    h+='<div class="row"><span class="lab" id="detCk">เช็กลิสต์ขั้นตอนทำคลิป ('+doneCount(c)+' จาก '+STEPS.length+')</span><div class="check">';
+    STEPS.forEach(function(s,i){
+      var on=!!(c.checks&&c.checks[i]);
+      h+='<label><input type="checkbox" data-step="'+i+'"'+(on?" checked":"")+'><span class="'+(on?"off":"")+'">'+s+'</span></label>';
+    });
+    h+='</div></div><div class="sheet-foot"><button type="button" class="btn primary" data-close="1">ปิด</button></div>';
+    $("detBody").innerHTML=h;
+    prevFocus=document.activeElement;
+    $("ovDet").classList.add("open");
+    $("detBody").setAttribute("tabindex","-1");$("detBody").focus();
+  }
+  var prevFocus=null;
+  function closeDetail(){
+    $("ovDet").classList.remove("open");state.openId=null;renderClips();
+    if(prevFocus&&document.contains(prevFocus)&&prevFocus.focus)prevFocus.focus();prevFocus=null;
+  }
+  $("detBody").addEventListener("click",function(e){
+    if(e.target.closest("[data-close]")){closeDetail();return;}
+    var cp=e.target.closest("[data-copy]");
+    if(cp){var c=find(state.openId);if(!c)return;var k=cp.getAttribute("data-copy");copyText(c[k],k==="script"?"สคริปต์":"แฮชแท็ก");}
+  });
+  $("detBody").addEventListener("change",function(e){
+    var cb=e.target.closest("[data-step]");if(!cb)return;
+    var c=find(state.openId);if(!c)return;
+    if(!c.checks)c.checks=steps(0);
+    c.checks[parseInt(cb.getAttribute("data-step"),10)]=cb.checked;save();
+    cb.parentNode.querySelector("span").className=cb.checked?"off":"";
+    $("detCk").textContent="เช็กลิสต์ขั้นตอนทำคลิป ("+doneCount(c)+" จาก "+STEPS.length+")";
+  });
+  $("ovDet").addEventListener("click",function(e){if(e.target.id==="ovDet")closeDetail();});
+  document.addEventListener("keydown",function(e){
+    if(e.key==="Escape"&&$("ovSend").classList.contains("open")){if(!spBusy)closeSend();return;}
+    if(e.key==="Escape"&&$("ovDet").classList.contains("open"))closeDetail();
+  });
+
+  load();
+  buildGrid();
+
+  /* ฟอร์มเพิ่มคลิป */
+  $("form").addEventListener("submit",function(e){
+    e.preventDefault();
+    var title=$("fTitle").value.trim();
+    if(!title){$("fErr").textContent="กรุณากรอกชื่อคลิปก่อนบันทึก";$("fTitle").focus();return;}
+    state.clips.unshift({id:uid(),title:title,plat:$("fPlat").value,stage:"idea",date:$("fDate").value,
+      hook:$("fHook").value.trim(),script:$("fScript").value.trim(),tags:$("fTags").value.trim(),checks:steps(0)});
+    $("form").reset();$("fErr").textContent="";
+    save();renderClips();toast("เพิ่มคลิปแล้ว");
+  });
+  $("todoForm").addEventListener("submit",function(e){
+    e.preventDefault();
+    var t=$("tdText").value.trim();if(!t)return;
+    state.todos.unshift({id:uid(),text:t,done:false});$("tdText").value="";save();rTodos();
+  });
+  $("noteArea").addEventListener("input",function(e){state.note=e.target.value;save();});
+
+  /* ค้นหา / กรอง */
+  $("q").addEventListener("input",function(e){state.q=e.target.value;renderClips(true);});
+  $("chips").addEventListener("click",function(e){
+    var b=e.target.closest("[data-plat]");if(!b)return;
+    state.plat=b.getAttribute("data-plat");renderChips();renderClips(true);
+  });
+
+  /* คลิกภายในกริป */
+  $("grid").addEventListener("click",function(e){
+    var w0=e.target.closest(".win");
+    if(w0&&state.front!==w0.getAttribute("data-win"))setFront(w0.getAttribute("data-win"));
+    if(spClick(e))return;
+    var t=e.target;
+    var tg=t.closest("[data-toggle]");
+    if(tg){
+      var id=tg.getAttribute("data-toggle"),on=!state.wide[id];state.wide[id]=on;
+      $("w-"+id).classList.toggle("wide",on);tg.textContent=on?"ย่อ":"ขยาย";tg.setAttribute("aria-expanded",String(on));
+      setFront(id);if(id==="board")rBoard();return;
+    }
+    var tb=t.closest("[data-tab]");if(tb){state.tab=tb.getAttribute("data-tab");rBoard();return;}
+    var op=t.closest("[data-open]");if(op){openDetail(op.getAttribute("data-open"));return;}
+    var cc=t.closest("[data-copyclip]");
+    if(cc){var c0=find(cc.getAttribute("data-copyclip"));if(c0){var k=cc.getAttribute("data-k");copyText(c0[k],k==="script"?"สคริปต์":"แฮชแท็ก");}return;}
+    if(t.closest("[data-copyall]")){
+      var all=[];state.clips.filter(matches).forEach(function(c){tagsOf(c).forEach(function(x){if(all.indexOf(x)<0)all.push(x);});});
+      copyText(all.join(" "),"แฮชแท็กทั้งหมด");return;
+    }
+    var sb=t.closest("[data-st]");
+    if(sb){
+      var key=sb.getAttribute("data-st"),val=sb.getAttribute("data-val"),s=state.status[key];
+      if(s.v===val){s.v="none";s.d="";}else{s.v=val;s.d=today();}
+      save();rPlat();rApp();return;
+    }
+    var td=t.closest("[data-tdel]");
+    if(td){var tid=td.getAttribute("data-tdel");state.todos=state.todos.filter(function(x){return x.id!==tid;});save();rTodos();return;}
+    var b=t.closest("[data-act]");if(!b)return;
+    var card=b.closest(".card"),cid=card.getAttribute("data-id"),c=find(cid);if(!c)return;
+    var act=b.getAttribute("data-act"),i=stageIdx(c.stage);
+    if(act==="open"){openDetail(cid);return;}
+    if(act==="next"&&i<STAGES.length-1){c.stage=STAGES[i+1].id;if(c.stage==="done")c.checks=steps(STEPS.length);state.tab=c.stage;save();renderClips();toast("ย้ายไปขั้น"+STAGES[i+1].name+"แล้ว");return;}
+    if(act==="prev"&&i>0){c.stage=STAGES[i-1].id;state.tab=c.stage;save();renderClips();toast("ย้ายกลับไปขั้น"+STAGES[i-1].name+"แล้ว");return;}
+    if(act==="del"){
+      if(delArmed===cid){state.clips=state.clips.filter(function(x){return x.id!==cid;});delArmed=null;save();renderClips();toast("ลบคลิปแล้ว");return;}
+      delArmed=cid;b.textContent="กดอีกครั้งเพื่อยืนยันลบ";b.classList.add("confirm");
+      clearTimeout(delTimer);delTimer=setTimeout(function(){delArmed=null;rBoard();},3000);
+    }
+  });
+  $("grid").addEventListener("change",function(e){
+    var t=e.target;
+    if(t.id==="ckSel"){state.ckId=t.value;rCheck();return;}
+    var ck=t.closest("[data-ck]");
+    if(ck){
+      var c=find(state.ckId);if(!c)return;
+      if(!c.checks)c.checks=steps(0);
+      c.checks[parseInt(ck.getAttribute("data-ck"),10)]=ck.checked;save();
+      ck.parentNode.querySelector("span").className=ck.checked?"off":"";
+      $("ckCnt").textContent=doneCount(c)+" จาก "+STEPS.length;
+      renderClips(true);return;
+    }
+    var td=t.closest("[data-td]");
+    if(td){var id=td.getAttribute("data-td");state.todos.forEach(function(x){if(x.id===id)x.done=td.checked;});save();rTodos();}
+  });
+  $("grid").addEventListener("input",function(e){
+    if(spInput(e))return;
+    var n=e.target.getAttribute&&e.target.getAttribute("data-note");
+    if(n&&state.status[n]){state.status[n].n=e.target.value;save();}
+  });
+
+  /* เอียงตามเมาส์ และลากจัดเรียง (เฉพาะจอกว้างที่ใช้เมาส์) */
+  var mqWide=window.matchMedia("(min-width:1000px)");
+  var mqMotion=window.matchMedia("(prefers-reduced-motion:no-preference)");
+  var mqFine=window.matchMedia("(pointer:fine)");
+  var dragging=null,raf=0;
+  function tiltOn(){return mqWide.matches&&mqMotion.matches&&mqFine.matches&&!dragging;}
+  var stage=$("stage"),grid=$("grid");
+  stage.addEventListener("mousemove",function(e){
+    if(!tiltOn())return;
+    var r=stage.getBoundingClientRect(),x=(e.clientX-r.left)/r.width-0.5,y=(e.clientY-r.top)/r.height-0.5;
+    cancelAnimationFrame(raf);
+    raf=requestAnimationFrame(function(){
+      grid.style.setProperty("--ry",(x*5).toFixed(2)+"deg");
+      grid.style.setProperty("--rx",(-y*3).toFixed(2)+"deg");
+    });
+  });
+  stage.addEventListener("mouseleave",function(){grid.style.setProperty("--rx","0deg");grid.style.setProperty("--ry","0deg");});
+
+  function moveOrder(id,delta){
+    var i=state.order.indexOf(id),j=i+delta;
+    if(i<0||j<0||j>=state.order.length)return;
+    state.order.splice(i,1);state.order.splice(j,0,id);
+    applyOrder();save();
+  }
+  grid.addEventListener("keydown",function(e){
+    var g=e.target.closest&&e.target.closest("[data-grip]");if(!g)return;
+    var id=g.getAttribute("data-grip"),d=0;
+    if(e.key==="ArrowLeft"||e.key==="ArrowUp")d=-1;else if(e.key==="ArrowRight"||e.key==="ArrowDown")d=1;
+    if(!d)return;
+    e.preventDefault();moveOrder(id,d);g.focus();toast("ย้ายหน้าต่างไปลำดับที่ "+(state.order.indexOf(id)+1));
+  });
+  grid.addEventListener("pointerdown",function(e){
+    var g=e.target.closest("[data-grip]");if(!g||!mqWide.matches)return;
+    var id=g.getAttribute("data-grip"),el=$("w-"+id);
+    dragging={id:id,el:el,x:e.clientX,y:e.clientY,grip:g};
+    setFront(id);
+    try{g.setPointerCapture(e.pointerId);}catch(x){}
+    grid.classList.add("dragmode");el.classList.add("dragging");
+    grid.style.setProperty("--rx","0deg");grid.style.setProperty("--ry","0deg");
+  });
+  grid.addEventListener("pointermove",function(e){
+    if(!dragging)return;
+    dragging.el.style.setProperty("--dx",(e.clientX-dragging.x)+"px");
+    dragging.el.style.setProperty("--dy",(e.clientY-dragging.y)+"px");
+  });
+  function endDrag(e,cancel){
+    if(!dragging)return;
+    var d=dragging;dragging=null;
+    d.el.style.pointerEvents="none";
+    var under=cancel?null:document.elementFromPoint(e.clientX,e.clientY);
+    d.el.style.pointerEvents="";
+    var tw=under&&under.closest?under.closest(".win"):null;
+    d.el.classList.remove("dragging");grid.classList.remove("dragmode");
+    d.el.style.setProperty("--dx","0px");d.el.style.setProperty("--dy","0px");
+    if(tw&&tw!==d.el){
+      var a=state.order.indexOf(d.id),b=state.order.indexOf(tw.getAttribute("data-win"));
+      state.order[a]=tw.getAttribute("data-win");state.order[b]=d.id;
+      applyOrder();save();toast("สลับตำแหน่งหน้าต่างแล้ว");
+    }
+  }
+  grid.addEventListener("pointerup",function(e){endDrag(e,false);});
+  grid.addEventListener("pointercancel",function(e){endDrag(e,true);});
+
+  function setTip(){
+    $("dragTip").textContent=mqWide.matches?"จัดเรียง: ลากปุ่ม ลาก ไปวางทับหน้าต่างอื่นเพื่อสลับตำแหน่ง หรือโฟกัสปุ่มแล้วกดลูกศร":"";
+  }
+  if(mqWide.addEventListener)mqWide.addEventListener("change",setTip);
+
+  /* เชื่อมต่อ social-poster: ไม่ฝังโทเคนในโค้ด เก็บใน sessionStorage เท่านั้น */
+  function getToken(){var t="";try{t=window.sessionStorage.getItem(TOKEN_KEY)||"";}catch(e){t="";}return t||tokenMem;}
+  function setToken(v){tokenMem=v;try{if(v)window.sessionStorage.setItem(TOKEN_KEY,v);else window.sessionStorage.removeItem(TOKEN_KEY);}catch(e){}}
+  function spInit(){
+    var u="";try{u=window.localStorage.getItem(SP_URL_KEY)||"";}catch(e){}
+    var po=window.location.origin,served=/^https?:$/.test(window.location.protocol)&&po&&po!=="null";
+    /* เสิร์ฟจากแอปเอง: ค่าเริ่มต้นคือ origin ของหน้านี้ (ถ้าเคยกรอกที่อยู่อื่นไว้เองจะใช้ค่านั้น) */
+    $("spBase").value=u||(served?po:"");$("spToken").value=getToken();
+    var o=window.location.origin;
+    $("spOrigin").textContent=(!o||o==="null")?"ไม่ทราบ (หน้านี้ทำงานในกรอบที่ไม่เปิดเผย origin)":o;
+    spCors();
+  }
+  /* ที่อยู่ฐานตรงกับ origin ของหน้านี้ = same-origin ซ่อนคำอธิบาย CORS */
+  function isSame(){
+    var o=window.location.origin;if(!o||o==="null")return false;
+    try{return new URL($("spBase").value.trim()).origin===o;}catch(e){return false;}
+  }
+  function spCors(){var s=isSame();$("spSame").hidden=!s;$("spCorsRow").hidden=s;}
+  function spMsg(t,cls){var m=$("spStatus");m.textContent=t;m.className="sp-status"+(cls?" "+cls:"");}
+  function getBase(){
+    var v=$("spBase").value.trim();
+    if(!v)return {ok:false,err:"กรุณากรอกที่อยู่ฐานของแอป"};
+    var u;try{u=new URL(v);}catch(e){return {ok:false,err:"ที่อยู่ไม่ถูกต้อง ต้องขึ้นต้นด้วย https://"};}
+    var local=u.hostname==="localhost"||u.hostname==="127.0.0.1";
+    if(!(u.protocol==="https:"||(u.protocol==="http:"&&local)))return {ok:false,err:"ที่อยู่ต้องขึ้นต้นด้วย https:// เท่านั้น"};
+    if(u.username||u.password)return {ok:false,err:"ที่อยู่ห้ามมีชื่อผู้ใช้หรือรหัสผ่านฝังอยู่"};
+    return {ok:true,url:u.origin+u.pathname.replace(/\/+$/,"")};
+  }
+  function req(method,url,o){
+    o=o||{};
+    return new Promise(function(resolve,reject){
+      var x=new XMLHttpRequest();spXhr=x;
+      try{
+        x.open(method,url,true);
+        x.setRequestHeader("x-dashboard-token",getToken());
+        if(o.ct)x.setRequestHeader("Content-Type",o.ct);
+      }catch(e){reject({kind:"bad"});return;}
+      if(o.timeout)x.timeout=o.timeout;
+      if(o.onProgress&&x.upload)x.upload.onprogress=function(ev){if(ev.lengthComputable)o.onProgress(ev.loaded,ev.total);};
+      x.onload=function(){var j=null;try{j=JSON.parse(x.responseText);}catch(e){}resolve({status:x.status,json:j});};
+      x.onerror=function(){reject({kind:"net"});};
+      x.ontimeout=function(){reject({kind:"timeout"});};
+      x.onabort=function(){reject({kind:"abort"});};
+      x.send(o.body==null?null:o.body);
+    });
+  }
+  function netMsg(){return isSame()
+    ?"ยังเชื่อมไม่ได้ ตรวจที่อยู่ของแอป และสถานะการทำงานของแอป"
+    :"ยังเชื่อมไม่ได้ ตรวจ CORS_ORIGINS ของแอป ที่อยู่ และโทเคน (ถ้าเปิดหน้านี้ภายใน claude.ai เบราว์เซอร์อาจบล็อกการเชื่อมต่อภายนอกด้วย)";}
+  function apiMsg(j){
+    if(j&&typeof j==="object"){var m=typeof j.error==="string"?j.error:(typeof j.message==="string"?j.message:"");return m.slice(0,200);}
+    return "";
+  }
+  function errText(er,what){
+    if(er&&er.kind==="net")return netMsg();
+    if(er&&er.kind==="timeout")return "แอปไม่ตอบกลับภายในเวลาที่กำหนด ลองใหม่อีกครั้ง";
+    if(er&&er.kind==="abort")return "ยกเลิกแล้ว";
+    if(er&&er.kind==="bad")return "โทเคนมีอักขระที่ใช้ส่งไม่ได้ ตรวจว่าวางโทเคนถูกต้อง";
+    if(er&&er.kind==="badresp")return "แอปตอบกลับในรูปแบบที่ไม่ตรงที่คาด";
+    var st=er&&er.status,m=apiMsg(er&&er.json),tail=m?" ข้อความจากแอป: "+m:"";
+    if(st===401||st===403)return "โทเคนไม่ถูกต้องหรือไม่มีสิทธิ์ทำรายการนี้"+tail;
+    if(st===404)return "ไม่พบเส้นทางบนแอป ตรวจที่อยู่ฐานของแอป"+tail;
+    if(st===413)return "ไฟล์ใหญ่เกินที่แอปรับได้"+tail;
+    if(st===400||st===415||st===422)return "แอปปฏิเสธข้อมูลที่ส่ง"+tail;
+    if(st>=500)return "แอปขัดข้อง ลองใหม่ภายหลัง"+tail;
+    return what+"ไม่สำเร็จ (รหัส "+st+")"+tail;
+  }
+  function ok2(r){return r.status>=200&&r.status<300;}
+  function renderChannels(){
+    var ul=$("spChannels");ul.textContent="";
+    spChannels.forEach(function(c){
+      var li=document.createElement("li"),b=document.createElement("b");b.textContent=c.name;li.appendChild(b);
+      if(c.plat){var t=document.createElement("span");t.className="tag";t.textContent=c.plat;li.appendChild(t);}
+      ul.appendChild(li);
+    });
+  }
+  function spTest(){
+    var b=getBase(),tok=$("spToken").value.trim();
+    if(!b.ok){spMsg(b.err,"bad");return;}
+    if(!tok){spMsg("กรุณากรอกโทเคนแดชบอร์ด","bad");return;}
+    setToken(tok);
+    try{window.localStorage.setItem(SP_URL_KEY,b.url);}catch(e){}
+    spMsg("กำลังทดสอบการเชื่อมต่อ...","");$("spTest").disabled=true;
+    function fin(){$("spTest").disabled=false;rSpClips();}
+    req("GET",b.url+"/integrations",{timeout:20000}).then(function(r){
+      if(!ok2(r)){spConnected=false;spChannels=[];renderChannels();spMsg(errText(r,"การทดสอบ"),"bad");return;}
+      var raw=r.json,list=Array.isArray(raw)?raw:(raw&&Array.isArray(raw.integrations)?raw.integrations:null);
+      if(!list){spConnected=false;spChannels=[];renderChannels();spMsg(errText({kind:"badresp"}),"bad");return;}
+      spChannels=list.filter(function(x){return x&&typeof x==="object"&&x.id!=null&&!x.disabled;}).map(function(x){
+        return {id:String(x.id),name:String(x.name||x.display||x.identifier||x.id).slice(0,80),plat:String(x.identifier||x.providerIdentifier||x.provider||x.platform||"").slice(0,40)};
+      });
+      spConnected=true;renderChannels();
+      spMsg(spChannels.length?"เชื่อมต่อสำเร็จ พบ "+spChannels.length+" ช่อง":"เชื่อมต่อได้ แต่แอปไม่มีช่องที่ใช้งานได้","good");
+    },function(er){spConnected=false;spChannels=[];renderChannels();spMsg(errText(er,"การทดสอบ"),"bad");}).then(fin,fin);
+  }
+  function rSpClips(){
+    var box=$("spClips");if(!box)return;
+    var list=state.clips.filter(function(c){return c.stage!=="done";});
+    if(!list.length){box.innerHTML='<div class="empty">ไม่มีคลิปที่ยังไม่โพสต์</div>';return;}
+    box.innerHTML=list.map(function(c){
+      return '<div class="libitem"><b>'+esc(c.title)+'</b><div class="meta"><span class="tag">'+esc(c.plat)+'</span>'+sampleTag(c)+spTag(c)+'<span>'+fmtDate(c.date)+'</span></div>'
+        +'<div class="acts"><button type="button" class="btn small primary" data-send="'+esc(c.id)+'">ส่งขึ้น social-poster</button></div></div>';
+    }).join("")+(spConnected?"":'<p class="note">ต้องกดทดสอบการเชื่อมต่อให้สำเร็จก่อนจึงจะส่งได้</p>');
+  }
+  function spClick(e){
+    var t=e.target;
+    if(t.closest("#spTest")){spTest();return true;}
+    var sh=t.closest("#spShow");
+    if(sh){var f=$("spToken"),show=f.type==="password";f.type=show?"text":"password";sh.textContent=show?"ซ่อน":"แสดง";sh.setAttribute("aria-pressed",String(show));return true;}
+    if(t.closest("#spCopyOrigin")){var o=window.location.origin;copyText(o&&o!=="null"?o:"","ค่า origin");return true;}
+    var sd=t.closest("[data-send]");
+    if(sd){openSend(sd.getAttribute("data-send"));return true;}
+    return false;
+  }
+  function spInput(e){
+    if(e.target.id==="spToken"){setToken(e.target.value.trim());return true;}
+    if(e.target.id==="spBase"){spCors();return true;}
+    return false;
+  }
+  function spLogout(){
+    if(spBusy&&spXhr){spCancelled=true;try{spXhr.abort();}catch(e){}}
+    setToken("");$("spToken").value="";$("spToken").type="password";
+    spConnected=false;spChannels=[];renderChannels();spMsg("ยังไม่ได้ทดสอบ","");
+    $("ovSend").classList.remove("open");sdClip=null;sdFile=null;rSpClips();
+  }
+
+  /* หน้าต่างยืนยันการส่ง */
+  function fmtSize(n){return n>=1048576?(n/1048576).toFixed(1)+" MB":Math.max(1,Math.round(n/1024))+" KB";}
+  function openSend(id){
+    var c=find(id);if(!c)return;
+    sdClip=c;sdFile=null;spBusy=false;spCancelled=false;
+    var h='<h2 id="sdTitle">ส่งขึ้น social-poster</h2><div class="meta"><b>'+esc(c.title)+'</b>'+sampleTag(c)+'</div>';
+    if(c.sample)h+='<p class="sp-warn">นี่คือคลิปตัวอย่าง ไม่ใช่งานจริงของคุณ</p>';
+    if(!spConnected){
+      h+='<p class="sp-status bad">ยังไม่ได้เชื่อมต่อ กดทดสอบการเชื่อมต่อในหน้าต่างเชื่อมต่อให้สำเร็จก่อน</p><div class="sheet-foot"><button type="button" class="btn primary" data-sdclose="1">ปิด</button></div>';
+      $("sdBody").innerHTML=h;showSend();return;
+    }
+    var content=[c.hook,c.script,c.tags].filter(function(x){return x;}).join("\n\n");
+    h+='<div class="row"><label for="sdFile">ไฟล์วิดีโอ</label><input class="field" id="sdFile" type="file" accept="video/*"><p class="note" id="sdFileInfo">ขีดจำกัดไฟล์ 500 MB ยังไม่ได้เลือกไฟล์</p></div>';
+    h+='<div class="row"><span class="lab">ช่องที่จะลง</span><div class="stack" id="sdChs"></div></div>';
+    h+='<div class="row"><span class="lab">รูปแบบ</span><div class="stack">'
+      +'<label class="chk"><input type="radio" name="sdMode" value="draft" checked><span>ฉบับร่าง (ยังไม่เผยแพร่)</span></label>'
+      +'<label class="chk"><input type="radio" name="sdMode" value="schedule"'+(c.date?"":" disabled")+'><span>ตั้งเวลาโพสต์ตามวันที่ของคลิป'+(c.date?" ("+fmtDate(c.date)+")":" (คลิปนี้ยังไม่ตั้งวันที่)")+'</span></label></div></div>';
+    h+='<div class="row" id="sdTimeRow" hidden><label for="sdTime">เวลา</label><input class="field" id="sdTime" type="time" value="09:00"></div>';
+    h+='<div class="row"><label for="sdContent">ข้อความโพสต์ (แก้ไขได้)</label><textarea class="field" id="sdContent" maxlength="5000"></textarea></div>';
+    h+='<div class="sumbox" id="sdSum" aria-live="polite"></div><ul class="hintlist" id="sdHints"></ul>';
+    h+='<label class="chk"><input type="checkbox" id="sdOk"><span>ฉันตรวจสรุปด้านบนแล้ว และยืนยันให้ส่ง</span></label>';
+    h+='<div class="bar" id="sdBarWrap" hidden><i id="sdBar"></i></div><p class="note" id="sdProg" role="status" aria-live="polite"></p><div class="stack" id="sdRes"></div>';
+    h+='<div class="sheet-foot"><button type="button" class="btn" data-sdclose="1" id="sdClose">ปิด</button><button type="button" class="btn danger" id="sdCancel" hidden>ยกเลิกการส่ง</button><button type="button" class="btn primary" id="sdGo" disabled>ยืนยันและส่ง</button></div>';
+    $("sdBody").innerHTML=h;
+    $("sdContent").value=content;
+    var chs=$("sdChs");
+    if(!spChannels.length){var n=document.createElement("p");n.className="note";n.textContent="แอปไม่มีช่องที่ใช้งานได้";chs.appendChild(n);}
+    spChannels.forEach(function(ch){
+      var l=document.createElement("label");l.className="chk";
+      var i=document.createElement("input");i.type="checkbox";i.setAttribute("data-ch",ch.id);
+      var sp=document.createElement("span");sp.textContent=ch.name+(ch.plat?" ("+ch.plat+")":"");
+      l.appendChild(i);l.appendChild(sp);chs.appendChild(l);
+    });
+    showSend();sdUpdate();
+  }
+  function showSend(){
+    sdPrev=document.activeElement;
+    $("ovSend").classList.add("open");$("sdBody").setAttribute("tabindex","-1");$("sdBody").focus();
+  }
+  function closeSend(){
+    if(spBusy)return;
+    $("ovSend").classList.remove("open");sdClip=null;sdFile=null;
+    if(sdPrev&&document.contains(sdPrev)&&sdPrev.focus)sdPrev.focus();sdPrev=null;
+  }
+  function sdState(){
+    var chans=[];Array.prototype.forEach.call($("sdBody").querySelectorAll("[data-ch]"),function(i){
+      if(i.checked)for(var k=0;k<spChannels.length;k++)if(spChannels[k].id===i.getAttribute("data-ch"))chans.push(spChannels[k]);
+    });
+    var m=$("sdBody").querySelector('input[name="sdMode"]:checked');
+    var mode=m?m.value:"draft",iso="",hints=[];
+    if(!sdFile)hints.push("ยังไม่ได้เลือกไฟล์วิดีโอ");
+    else if(!/^video\//.test(sdFile.type))hints.push("ไฟล์ที่เลือกไม่ใช่วิดีโอ");
+    else if(sdFile.size>MAX_BYTES)hints.push("ไฟล์ใหญ่เกิน 500 MB ส่งไม่ได้");
+    if(!chans.length)hints.push("ยังไม่ได้เลือกช่อง");
+    if(!$("sdContent").value.trim())hints.push("ข้อความโพสต์ว่างอยู่");
+    if(mode==="schedule"){
+      var tm=$("sdTime").value;
+      var d=sdClip&&sdClip.date&&tm?new Date(sdClip.date+"T"+tm):null;
+      if(!d||isNaN(d.getTime()))hints.push("วันที่หรือเวลาไม่ถูกต้อง");
+      else if(d.getTime()<=Date.now()+60000)hints.push("เวลาตั้งโพสต์ต้องอยู่ในอนาคต");
+      else iso=d.toISOString();
+    }
+    return {chans:chans,mode:mode,iso:iso,hints:hints,valid:hints.length===0};
+  }
+  function sdUpdate(){
+    if(!sdClip||!$("sdSum"))return;
+    var st=sdState();
+    $("sdTimeRow").hidden=st.mode!=="schedule";
+    var sum=$("sdSum");sum.textContent="";
+    var t=document.createElement("b");t.textContent="สรุปก่อนส่ง";sum.appendChild(t);
+    var ul=document.createElement("ul");
+    [ "คลิป: "+sdClip.title,
+      "ไฟล์: "+(sdFile?sdFile.name+" ("+fmtSize(sdFile.size)+")":"ยังไม่ได้เลือก"),
+      "ช่อง: "+(st.chans.length?st.chans.map(function(c){return c.name;}).join(", "):"ยังไม่ได้เลือก"),
+      st.mode==="draft"?"ประเภท: ฉบับร่าง จะไม่เผยแพร่":"ประเภท: ตั้งเวลา "+(st.iso?fmtDate(sdClip.date)+" เวลา "+$("sdTime").value+" น.":""),
+      "ความเป็นส่วนตัว: ส่วนตัว (แอปบังคับ)"].forEach(function(x){var li=document.createElement("li");li.textContent=x;ul.appendChild(li);});
+    sum.appendChild(ul);
+    var hl=$("sdHints");hl.textContent="";
+    st.hints.forEach(function(x){var li=document.createElement("li");li.textContent=x;hl.appendChild(li);});
+    $("sdGo").textContent=st.mode==="draft"?"ยืนยันและส่งเป็นฉบับร่าง":"ยืนยันและตั้งเวลา";
+    $("sdGo").disabled=!(st.valid&&$("sdOk").checked)||spBusy;
+  }
+  $("sdBody").addEventListener("change",function(e){
+    var t=e.target;
+    if(t.id==="sdFile"){
+      sdFile=t.files&&t.files[0]?t.files[0]:null;
+      var info=$("sdFileInfo");
+      if(!sdFile)info.textContent="ขีดจำกัดไฟล์ 500 MB ยังไม่ได้เลือกไฟล์";
+      else info.textContent=sdFile.name+" ขนาด "+fmtSize(sdFile.size)+(sdFile.size>MAX_BYTES?" เกินขีดจำกัด 500 MB":(sdFile.size>MAX_BYTES*0.8?" ใกล้ขีดจำกัด 500 MB":" ไม่เกินขีดจำกัด 500 MB"));
+    }
+    $("sdOk").checked=t.id==="sdOk"?t.checked:false;
+    sdUpdate();
+  });
+  $("sdBody").addEventListener("input",function(e){if(e.target.id==="sdContent"||e.target.id==="sdTime"){$("sdOk").checked=false;sdUpdate();}});
+  function resRow(ok,name,msg){
+    var d=document.createElement("div");d.className="resrow "+(ok?"ok":"fail");
+    var b=document.createElement("b");b.textContent=(ok?"สำเร็จ":"ล้มเหลว")+" "+name;
+    var s=document.createElement("span");s.textContent=msg;
+    d.appendChild(b);d.appendChild(s);$("sdRes").appendChild(d);
+  }
+  function setBusy(v){
+    spBusy=v;
+    ["sdFile","sdContent","sdTime","sdOk"].forEach(function(i){if($(i))$(i).disabled=v;});
+    Array.prototype.forEach.call($("sdBody").querySelectorAll("[data-ch],input[name=sdMode]"),function(i){i.disabled=v;});
+    $("sdClose").hidden=v;$("sdCancel").hidden=!v;$("sdBarWrap").hidden=!v&&$("sdBar").style.width==="0%";
+    if(!v)sdUpdate();else $("sdGo").disabled=true;
+  }
+  function doSend(){
+    if(spBusy||!sdClip)return;
+    var st=sdState();
+    if(!st.valid||!$("sdOk").checked)return;
+    var b=getBase();if(!b.ok){return;}
+    var clip=sdClip,file=sdFile,content=$("sdContent").value.trim();
+    spCancelled=false;$("sdRes").textContent="";$("sdBar").style.width="0%";$("sdBarWrap").hidden=false;
+    setBusy(true);$("sdProg").textContent="กำลังอัปโหลดวิดีโอ 0%";
+    req("POST",b.url+"/media",{body:file,ct:file.type,onProgress:function(l,t){
+      var p=Math.round(l/t*100);$("sdBar").style.width=p+"%";$("sdProg").textContent="กำลังอัปโหลดวิดีโอ "+p+"% ("+fmtSize(l)+" จาก "+fmtSize(t)+")";
+    }}).then(function(r){
+      if(!ok2(r))throw r;
+      var u=r.json&&r.json.url;
+      if(typeof u!=="string"||!/^https?:\/\//.test(u))throw {kind:"badresp"};
+      return u;
+    }).then(function(url){
+      $("sdBar").style.width="100%";$("sdProg").textContent="อัปโหลดเสร็จ กำลังสร้างโพสต์";
+      var okNames=[];
+      return st.chans.reduce(function(chain,ch){
+        return chain.then(function(){
+          if(spCancelled){resRow(false,ch.name,"ไม่ได้ส่ง เพราะยกเลิกก่อน");return;}
+          var body={content:content,mediaUrls:[url],integrationIds:[ch.id],privacyStatus:"private",mode:st.mode};
+          if(st.mode==="schedule")body.scheduledAt=st.iso;
+          return req("POST",b.url+"/posts",{body:JSON.stringify(body),ct:"application/json",timeout:30000}).then(function(r){
+            if(!ok2(r))throw r;
+            okNames.push(ch.name);
+            resRow(true,ch.name,st.mode==="draft"?"บันทึกเป็นฉบับร่างในแอปแล้ว ยังไม่ได้เผยแพร่":"ตั้งเวลาโพสต์ในแอปแล้ว");
+          }).then(null,function(er){
+            var m=errText(er,"การสร้างโพสต์");
+            if(er&&er.kind==="abort")m="ยกเลิกระหว่างส่ง ไม่แน่ใจว่าแอปสร้างโพสต์แล้วหรือไม่ ให้ตรวจในแอป";
+            resRow(false,ch.name,m);
+          });
+        });
+      },Promise.resolve()).then(function(){return okNames;});
+    }).then(function(okNames){
+      if(okNames.length){
+        clip.sp={mode:st.mode,at:st.iso,names:okNames.slice()};
+        save();renderClips();
+      }
+      $("sdProg").textContent=okNames.length?"เสร็จสิ้น สำเร็จ "+okNames.length+" จาก "+st.chans.length+" ช่อง สถานะคลิปในบอร์ดไม่เปลี่ยน เพราะยังไม่ได้เผยแพร่":"เสร็จสิ้น ไม่มีช่องไหนสำเร็จ";
+    },function(er){
+      var m=errText(er,"การอัปโหลดวิดีโอ");
+      resRow(false,"อัปโหลดวิดีโอ",m);
+      $("sdProg").textContent="ไม่ได้สร้างโพสต์ เพราะอัปโหลดไม่สำเร็จ";
+    }).then(function(){$("sdOk").checked=false;setBusy(false);$("sdBarWrap").hidden=true;});
+  }
+  $("sdBody").addEventListener("click",function(e){
+    if(e.target.closest("[data-sdclose]")){closeSend();return;}
+    if(e.target.closest("#sdCancel")){spCancelled=true;if(spXhr){try{spXhr.abort();}catch(x){}}return;}
+    if(e.target.closest("#sdGo")){doSend();}
+  });
+  $("ovSend").addEventListener("click",function(e){if(e.target.id==="ovSend")closeSend();});
+
+  /* ล็อกหน้าจอ */
+  var AUTH_KEY="clip-dashboard-auth-v1",authMem=null,authMode="login";
+  function getAuth(){
+    try{var r=window.localStorage.getItem(AUTH_KEY);if(r){var a=JSON.parse(r);if(a&&a.hash&&a.salt&&a.user)return a;}}catch(e){}
+    return authMem;
+  }
+  function canStore(){try{window.localStorage.setItem("_t","1");window.localStorage.removeItem("_t");return true;}catch(e){return false;}}
+  function putAuth(a){
+    authMem=a;
+    try{window.localStorage.setItem(AUTH_KEY,JSON.stringify(a));}catch(e){}
+  }
+  function toHex(buf){return Array.prototype.map.call(new Uint8Array(buf),function(b){return ("0"+b.toString(16)).slice(-2);}).join("");}
+  function hashPw(salt,pw){
+    if(!(window.crypto&&window.crypto.subtle))return Promise.reject(new Error("nocrypto"));
+    return window.crypto.subtle.digest("SHA-256",new TextEncoder().encode(salt+":"+pw)).then(toHex);
+  }
+  function newSalt(){var a=new Uint8Array(16);window.crypto.getRandomValues(a);return toHex(a);}
+  function gErr(t){document.getElementById("gErr").textContent=t;}
+  function setLocked(v){document.body.classList.toggle("locked",v);if(v)setupGate();}
+  function setupGate(){
+    authMode=getAuth()?"login":"setup";
+    var setup=authMode==="setup";
+    document.getElementById("gateTitle").textContent=setup?"ตั้งรหัสผ่านครั้งแรก":"เข้าสู่ระบบ";
+    document.getElementById("gateHint").textContent=setup?"ตั้งชื่อผู้ใช้และรหัสผ่านของคุณเอง อย่างน้อย 6 ตัวอักษร":"กรอกชื่อผู้ใช้และรหัสผ่านเพื่อเปิดแดชบอร์ด";
+    document.getElementById("gConfRow").hidden=!setup;
+    if(setup&&!canStore())document.getElementById("gateHint").textContent+=" หมายเหตุ เบราว์เซอร์นี้จำรหัสถาวรไม่ได้ ต้องตั้งใหม่ทุกครั้งที่เปิดหน้า";
+    document.getElementById("gPass").type=document.getElementById("gConf").type="password";
+    document.getElementById("gShow").textContent="แสดง";document.getElementById("gShow").setAttribute("aria-pressed","false");
+    document.getElementById("gSubmit").textContent=setup?"ตั้งรหัสผ่านและเข้าใช้งาน":"เข้าสู่ระบบ";
+    document.getElementById("gPass").autocomplete=setup?"new-password":"current-password";
+    ["gUser","gPass","gConf"].forEach(function(i){document.getElementById(i).value="";});
+    gErr("");
+  }
+  document.getElementById("gShow").addEventListener("click",function(){
+    var f=document.getElementById("gPass"),c=document.getElementById("gConf"),show=f.type==="password";
+    f.type=c.type=show?"text":"password";
+    this.textContent=show?"ซ่อน":"แสดง";this.setAttribute("aria-pressed",String(show));
+  });
+  document.getElementById("gateForm").addEventListener("submit",function(e){
+    e.preventDefault();
+    var user=document.getElementById("gUser").value.trim(),pw=document.getElementById("gPass").value;
+    if(!user||!pw){gErr("กรุณากรอกชื่อผู้ใช้และรหัสผ่าน");return;}
+    if(authMode==="setup"){
+      if(pw.length<6){gErr("รหัสผ่านสั้นเกินไป ต้องมีอย่างน้อย 6 ตัวอักษร");return;}
+      if(pw!==document.getElementById("gConf").value){gErr("รหัสผ่านสองช่องไม่ตรงกัน");return;}
+      try{
+        var salt=newSalt();
+        hashPw(salt,pw).then(function(h){putAuth({user:user,salt:salt,hash:h});unlock();},
+          function(){gErr("เบราว์เซอร์นี้ไม่รองรับการเข้ารหัส กรุณาเปิดด้วยเบราว์เซอร์รุ่นใหม่");});
+      }catch(x){gErr("เบราว์เซอร์นี้ไม่รองรับการเข้ารหัส กรุณาเปิดด้วยเบราว์เซอร์รุ่นใหม่");}
+      return;
+    }
+    var a=getAuth();
+    if(!a){setupGate();return;}
+    hashPw(a.salt,pw).then(function(h){
+      if(user===a.user&&h===a.hash){unlock();}
+      else{gErr("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");document.getElementById("gPass").value="";}
+    },function(){gErr("เบราว์เซอร์นี้ไม่รองรับการเข้ารหัส กรุณาเปิดด้วยเบราว์เซอร์รุ่นใหม่");});
+  });
+  function unlock(){
+    document.getElementById("gPass").value="";document.getElementById("gConf").value="";
+    setLocked(false);
+  }
+  document.getElementById("btnOut").addEventListener("click",function(){
+    document.getElementById("ovDet").classList.remove("open");state.openId=null;
+    spLogout();
+    setLocked(true);
+  });
+  setupGate();
+
+
+  renderNote();
+  renderAll();
+  setTip();
+})();
+</script>
+</body>
+</html>
