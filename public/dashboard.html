@@ -178,6 +178,26 @@ textarea.field{min-height:96px;resize:vertical}
   .board4 .col{flex:none;max-width:none}
 }
 
+
+/* โพสต์ที่ส่งแล้ว */
+.pitem{background:var(--raised);border:1px solid var(--line-solid);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.pitem b{font-weight:500;word-break:break-word}
+.pst{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;border:1px solid var(--line-solid)}
+.pst.draft,.pst.scheduled{color:var(--accent)}
+.pst.published{color:#7fd6a4}
+.pst.failed,.pst.cancelled{color:#ff8a8a}
+.pres{display:flex;flex-wrap:wrap;gap:6px;font-size:12px}
+.pres span{border:1px dashed var(--line-solid);border-radius:8px;padding:2px 8px}
+/* แผนภาพเอเจนต์ 3 มิติ */
+.ag-scene{perspective:900px;height:300px;display:grid;place-items:center;overflow:hidden}
+.ag-ring{position:relative;width:150px;height:60px;transform-style:preserve-3d;transform:rotateX(-14deg);animation:agspin 24s linear infinite}
+.ag-node{position:absolute;left:50%;top:50%;width:130px;margin:-30px 0 0 -65px;padding:8px 6px;text-align:center;font-size:12px;line-height:1.35;background:var(--raised);border:1px solid var(--accent);border-radius:10px;box-shadow:0 8px 20px #0007;backface-visibility:hidden}
+.ag-node em{display:block;font-style:normal;color:var(--muted);font-size:11px}
+.ag-core{position:absolute;left:50%;top:50%;width:92px;margin:-26px 0 0 -46px;padding:10px 4px;text-align:center;font-size:13px;font-weight:600;border-radius:50%;background:var(--accent);color:#1a1424;transform:rotateX(14deg);animation:agcounter 24s linear infinite}
+@keyframes agspin{to{transform:rotateX(-14deg) rotateY(360deg)}}
+@keyframes agcounter{to{transform:rotateX(14deg) rotateY(-360deg)}}
+@media (prefers-reduced-motion:reduce){.ag-ring,.ag-core{animation:none}}
+.ag-list{margin:0;padding-left:18px;font-size:13px;color:var(--muted)}
 /* ฉาก 3 มิติ: perspective ที่ตัวห่อ, เอียงทั้งกริดตามเมาส์, แต่ละหน้าต่างลอยที่ระดับ translateZ ต่างกัน */
 .win{--z:var(--zb,0px);--dx:0px;--dy:0px;box-shadow:0 2px 6px #0006,0 8px 22px #0004}
 .win.front{border-color:var(--accent)}
@@ -290,6 +310,8 @@ textarea.field{min-height:96px;resize:vertical}
     {id:"plat",t:"สถานะแพลตฟอร์ม",sub:"สถานะที่บันทึกเอง ไม่ใช่ข้อมูลสด หน้านี้ดึงข้อมูลจากแพลตฟอร์มไม่ได้ ตั้งค่าด้วยมือเท่านั้น"},
     {id:"app",t:"สถานะแอป social-poster",sub:"สถานะที่บันทึกเอง ไม่ใช่ข้อมูลสด ตั้งค่าด้วยมือเท่านั้น ผลทดสอบการเชื่อมต่อจริงอยู่ในหน้าต่างถัดไป"},
     {id:"sp",t:"เชื่อมต่อ social-poster"},
+    {id:"posts",t:"โพสต์ที่ส่งแล้ว (ช่องและสถานะ)"},
+    {id:"agents",t:"แผนภาพเอเจนต์ 3 มิติ",sub:"แผนภาพแสดงหน้าที่ ไม่ใช่สถานะสด"},
     {id:"check",t:"เช็กลิสต์ขั้นตอนทำคลิป"},
     {id:"lib",t:"คลังสคริปต์และแฮชแท็ก"},
     {id:"notes",t:"บันทึกและงานที่ต้องทำ"}
@@ -445,6 +467,16 @@ textarea.field{min-height:96px;resize:vertical}
       +'<div class="stack" id="todoList"></div>'
       +'<div class="row"><label for="noteArea">บันทึกอิสระ</label><textarea class="field" id="noteArea" placeholder="จดไอเดียหรือข้อความที่ต้องจำ"></textarea></div>';
     $("noteArea").value=state.note;
+    $("b-posts").innerHTML=
+      '<div class="acts"><button type="button" class="btn small primary" id="psRefresh">โหลดรายการโพสต์</button></div>'
+      +'<p class="sp-status" id="psStatus" role="status" aria-live="polite">กดโหลด (ต้องทดสอบการเชื่อมต่อก่อน)</p>'
+      +'<div class="stack" id="psList"></div>';
+    var AG=[["ตรวจระบบแอป","ทุกวัน 07:43 อ่านอย่างเดียว"],["แก้โค้ดและ PR","social-poster บน Railway"],["ตัดต่อคลิป","ภาพ เสียง ดนตรี"],["สกิลแนะนำเมื่อพลาด","หาสาเหตุและวิธีกันซ้ำ"],["เขียนสคริปต์","ฮุคและคำชวนท้ายคลิป"]];
+    var agh='<div class="ag-scene" aria-hidden="true"><div class="ag-ring">';
+    AG.forEach(function(a,i){agh+='<div class="ag-node" style="transform:rotateY('+(i*360/AG.length)+'deg) translateZ(170px)">'+esc(a[0])+'<em>'+esc(a[1])+'</em></div>';});
+    agh+='<div class="ag-core">Claude<br>ตัวหลัก</div></div></div><ul class="ag-list">';
+    AG.forEach(function(a){agh+='<li>'+esc(a[0])+': '+esc(a[1])+'</li>';});
+    $("b-agents").innerHTML=agh+'</ul>';
     $("b-sp").innerHTML=
       '<p class="sp-warn">ใช้เฉพาะโทเคนแดชบอร์ดที่จำกัดสิทธิ์ (ดู สร้างฉบับร่าง ตั้งเวลา) ห้ามวางโทเคนแอดมิน โทเคนเก็บชั่วคราวในแท็บนี้เท่านั้น และหายเมื่อปิดแท็บหรือออกจากระบบ</p>'
       +'<div class="row"><label for="spBase">ที่อยู่ฐานของแอป</label><input class="field" id="spBase" inputmode="url" autocomplete="off" autocapitalize="none" placeholder="https://ชื่อแอป.up.railway.app" maxlength="200"></div>'
@@ -920,9 +952,41 @@ textarea.field{min-height:96px;resize:vertical}
         +'<div class="acts"><button type="button" class="btn small primary" data-send="'+esc(c.id)+'">ส่งขึ้น social-poster</button></div></div>';
     }).join("")+(spConnected?"":'<p class="note">ต้องกดทดสอบการเชื่อมต่อให้สำเร็จก่อนจึงจะส่งได้</p>');
   }
+  var PST_LABEL={draft:"ฉบับร่าง",scheduled:"ตั้งเวลา",publishing:"กำลังโพสต์",published:"โพสต์แล้ว",failed:"ล้มเหลว",cancelled:"ยกเลิก"};
+  function psMsg(t,cls){var m=$("psStatus");m.textContent=t;m.className="sp-status"+(cls?" "+cls:"");}
+  function fmtTs(v){var d=new Date(v);if(isNaN(d.getTime()))return "";return d.toLocaleString("th-TH",{dateStyle:"medium",timeStyle:"short"});}
+  function renderPosts(list){
+    var box=$("psList");box.textContent="";
+    if(!list.length){var e=document.createElement("div");e.className="empty";e.textContent="ยังไม่มีโพสต์";box.appendChild(e);return;}
+    list.forEach(function(p){
+      var d=document.createElement("div");d.className="pitem";
+      var b=document.createElement("b");b.textContent=String(p.content||"").slice(0,120);d.appendChild(b);
+      var m=document.createElement("div");m.className="meta";
+      var st=document.createElement("span");st.className="pst "+String(p.status||"").replace(/[^a-z]/g,"");st.textContent=PST_LABEL[p.status]||String(p.status||"");m.appendChild(st);
+      var when=p.status==="scheduled"&&p.scheduled_at?"ตั้งเวลา "+fmtTs(p.scheduled_at):"สร้าง "+fmtTs(p.created_at);
+      var w=document.createElement("span");w.textContent=when;m.appendChild(w);d.appendChild(m);
+      var rs=document.createElement("div");rs.className="pres";
+      var res=Array.isArray(p.results)?p.results:[];
+      if(!res.length){var n=document.createElement("span");n.textContent="ยังไม่ส่งไปแพลตฟอร์มใด";rs.appendChild(n);}
+      res.forEach(function(r){var x=document.createElement("span");x.textContent=String(r.platform||"?")+": "+(r.status==="success"?"สำเร็จ":(r.status==="error"?"ผิดพลาด":String(r.status||"")));rs.appendChild(x);});
+      d.appendChild(rs);box.appendChild(d);
+    });
+  }
+  function psLoad(){
+    var b=getBase();
+    if(!b.ok){psMsg(b.err,"bad");return;}
+    if(!getToken()){psMsg("กรุณากรอกโทเคนและกดทดสอบการเชื่อมต่อก่อน","bad");return;}
+    psMsg("กำลังโหลด...","");$("psRefresh").disabled=true;
+    function fin(){$("psRefresh").disabled=false;}
+    req("GET",b.url+"/posts",{timeout:20000}).then(function(r){
+      if(!ok2(r)||!Array.isArray(r.json)){psMsg(errText(ok2(r)?{kind:"badresp"}:r,"การโหลด"),"bad");return;}
+      renderPosts(r.json);psMsg("พบ "+r.json.length+" โพสต์","good");
+    },function(er){psMsg(errText(er,"การโหลด"),"bad");}).then(fin,fin);
+  }
   function spClick(e){
     var t=e.target;
     if(t.closest("#spTest")){spTest();return true;}
+    if(t.closest("#psRefresh")){psLoad();return true;}
     var sh=t.closest("#spShow");
     if(sh){var f=$("spToken"),show=f.type==="password";f.type=show?"text":"password";sh.textContent=show?"ซ่อน":"แสดง";sh.setAttribute("aria-pressed",String(show));return true;}
     if(t.closest("#spCopyOrigin")){var o=window.location.origin;copyText(o&&o!=="null"?o:"","ค่า origin");return true;}
