@@ -93,6 +93,15 @@ curl -X POST https://<โดเมนแอป>/posts/import/yingad -H "x-admin-
 - โค้ดหน้าเว็บอยู่ที่ `src/studio-client/` และคอมไพล์ไป `public/studio/` ด้วย `npm run build`
 - การอัดคลิปเป็นแบบเรียลไทม์ (คลิป 30 วินาที = อัด 30 วินาที) และห้ามสลับแท็บระหว่างอัด
 
+## API สำหรับแดชบอร์ดต่างโดเมน (`CORS_ORIGINS` และ `DASHBOARD_TOKEN`)
+
+ตั้งสองตัวแปรนี้บน Railway เท่านั้น (ไม่ตั้ง = พฤติกรรมเดิมทุกอย่าง)
+
+- `CORS_ORIGINS` — รายชื่อโดเมนแดชบอร์ดที่อนุญาต คั่นด้วยจุลภาค เช่น `https://a.example,https://b.example` (ห้ามใช้ `*`) ไม่ตั้ง = ปิด CORS ทั้งหมด ตอบ preflight (OPTIONS) ก่อนตรวจ token และอนุญาต header `x-dashboard-token`, `x-admin-token`, `content-type`
+- `DASHBOARD_TOKEN` — โทเคนสิทธิ์จำกัดส่งผ่าน header `x-dashboard-token` เข้าได้เฉพาะ `GET /integrations`, `POST /media`, `POST /posts`, `GET /posts`, `GET /posts/:id` ส่วนเส้นทางอื่นได้ 403 ไม่ตั้งค่า = ปฏิเสธทุกคำขอที่ใช้โทเคนนี้
+  - `POST /posts` ต้องส่ง `mode` เป็น `draft` หรือ `schedule` เท่านั้น (ห้าม `now`) และถ้าไม่ส่ง `privacyStatus` จะเป็น `private`
+  - `ADMIN_TOKEN` เดิมทำงานเหมือนเดิมทุกอย่าง
+
 ## Deploy บน Railway
 
 1. สร้าง Project ใหม่ใน Railway, เชื่อม repo นี้

@@ -14,13 +14,16 @@ import { legalRouter } from "./routes/legal.js";
 import { agentsRouter } from "./routes/agents.js";
 import { tiktokAuthRouter } from "./routes/tiktok-auth.js";
 import { mcpRouter } from "./mcp.js";
-import { requireAdmin } from "./lib/admin-auth.js";
+import { requireAdminOrDashboard } from "./lib/dashboard-auth.js";
+import { corsAllowlist } from "./lib/cors.js";
 import { runDuePosts } from "./lib/services.js";
 import { pool } from "./db/pool.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const app = express();
+// CORS แบบ allowlist (ENV CORS_ORIGINS) — ไม่ตั้ง = ปิด; ตอบ preflight ก่อน auth
+app.use(corsAllowlist);
 app.use(express.json({ limit: "10mb" }));
 
 // สาธารณะ: health check สำหรับ Railway (ตั้ง Healthcheck Path = /health)
@@ -40,7 +43,7 @@ app.use(legalRouter);
 app.use(express.static(join(__dirname, "..", "public")));
 
 // เส้นทางที่ต้องใช้ token ระบุชัดเจนตรงนี้ที่เดียว (ไม่ใช้ router.use ใน router เพราะจะครอบเส้นทางอื่นที่ mount ทีหลัง)
-app.use(["/integrations", "/posts", "/analytics", "/studio-api", "/tts", "/agents-api"], requireAdmin);
+app.use(["/integrations", "/posts", "/analytics", "/studio-api", "/tts", "/agents-api"], requireAdminOrDashboard);
 
 // สาธารณะ: OAuth callback (Google เรียก) และ GET /media/:name (แพลตฟอร์มปลายทางดึงไฟล์) — POST /media ล็อกใน router เอง
 app.use(authRouter);

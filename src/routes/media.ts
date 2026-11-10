@@ -1,13 +1,13 @@
 import { Router } from "express";
 import { isAllowedType, mediaPath, saveMedia, UploadTooLargeError } from "../lib/media-store.js";
-import { requireAdmin } from "../lib/admin-auth.js";
+import { requireAdminOrDashboard } from "../lib/dashboard-auth.js";
 
 export const mediaRouter = Router();
 
 // POST /media — อัปโหลดไฟล์ดิบ (body = ไฟล์เลย, ไม่ใช่ multipart)
 //   curl -H "x-admin-token: $T" -H "content-type: video/mp4" --data-binary @clip.mp4 "$URL/media?name=clip.mp4"
 // คืน { url } เอาไปใส่ mediaUrls ตอนโพสต์ได้เลย
-mediaRouter.post("/media", requireAdmin, async (req, res) => {
+mediaRouter.post("/media", requireAdminOrDashboard, async (req, res) => {
   const contentType = (req.headers["content-type"] ?? "").split(";")[0].trim().toLowerCase();
   if (!isAllowedType(contentType)) {
     res.status(415).json({ error: "รองรับเฉพาะไฟล์ video/*, image/* และ audio/* (ตั้ง content-type ให้ตรงชนิดไฟล์)" });
