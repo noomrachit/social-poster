@@ -921,6 +921,9 @@ textarea.field{min-height:96px;resize:vertical}
     spChannels.forEach(function(c){
       var li=document.createElement("li"),b=document.createElement("b");b.textContent=c.name;li.appendChild(b);
       if(c.plat){var t=document.createElement("span");t.className="tag";t.textContent=c.plat;li.appendChild(t);}
+      var sp=document.createElement("span");sp.className="pst "+(c.reauth?"failed":(c.err?"scheduled":"published"));
+      sp.textContent=c.reauth?"ต้องเชื่อมใหม่":(c.err?"มี error":"ใช้ได้");li.appendChild(sp);
+      if(c.err){var em=document.createElement("small");em.textContent=c.err;em.style.cssText="display:block;color:var(--muted);font-size:12px;width:100%";li.appendChild(em);}
       ul.appendChild(li);
     });
   }
@@ -937,7 +940,7 @@ textarea.field{min-height:96px;resize:vertical}
       var raw=r.json,list=Array.isArray(raw)?raw:(raw&&Array.isArray(raw.integrations)?raw.integrations:null);
       if(!list){spConnected=false;spChannels=[];renderChannels();spMsg(errText({kind:"badresp"}),"bad");return;}
       spChannels=list.filter(function(x){return x&&typeof x==="object"&&x.id!=null&&!x.disabled;}).map(function(x){
-        return {id:String(x.id),name:String(x.name||x.display||x.identifier||x.id).slice(0,80),plat:String(x.identifier||x.providerIdentifier||x.provider||x.platform||"").slice(0,40)};
+        return {id:String(x.id),name:String(x.name||x.display_name||x.display||x.identifier||x.id).slice(0,80),plat:String(x.identifier||x.providerIdentifier||x.provider||x.platform||"").slice(0,40),reauth:x.needs_reauth===true,err:typeof x.last_error==="string"?x.last_error.slice(0,120):""};
       });
       spConnected=true;renderChannels();
       spMsg(spChannels.length?"เชื่อมต่อสำเร็จ พบ "+spChannels.length+" ช่อง":"เชื่อมต่อได้ แต่แอปไม่มีช่องที่ใช้งานได้","good");
