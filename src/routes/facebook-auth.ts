@@ -72,6 +72,8 @@ facebookAuthRouter.get("/auth/facebook/callback", async (req, res) => {
     }
     res.send(`เชื่อมเพจ Facebook สำเร็จ: ${pages.map((p) => p.name).join(", ")} ปิดหน้านี้ได้เลย`);
   } catch (err: any) {
+    // บันทึกสาเหตุลง log เพื่อให้ตรวจย้อนหลังได้ (ข้อความจาก Meta + code/subcode เท่านั้น ไม่มี token หรือ code)
+    console.error(`[facebook-callback] เชื่อมไม่สำเร็จ: ${String(err?.message ?? err).slice(0, 300)} (code=${err?.code ?? "-"}, subcode=${err?.subcode ?? "-"})`);
     res.status(500).send(`เชื่อมไม่สำเร็จ: ${err?.message ?? err}`);
   }
 });
