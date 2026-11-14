@@ -1,5 +1,5 @@
 import { createWriteStream } from "node:fs";
-import { mkdir, stat, unlink } from "node:fs/promises";
+import { appendFile, mkdir, rename, stat, unlink } from "node:fs/promises";
 import { extname, join } from "node:path";
 import { pipeline } from "node:stream/promises";
 import { Transform, type Readable } from "node:stream";
@@ -83,4 +83,48 @@ export async function mediaPath(name: string): Promise<string | null> {
   } catch {
     return null;
   }
+}
+
+const UPLOAD_ID = /^[A-Za-z0-9_-]{16}$/;
+const PARTIAL_DIR = ".partial";
+
+/**
+ * อัปโหลดแบบแบ่งก้อน (base64) สำหรับ client ที่ส่งไฟล์ดิบไม่ได้ เช่น MCP
+ * ก้อนแรกไม่ต้องส่ง uploadId → ได้ uploadId กลับ; ก้อนสุดท้ายใส่ last=true → ย้ายเป็นไฟล์จริง
+ */
+export async function appendMediaChunk(opts: {
+  uploadId?: string;
+  data: Buffer;
+  contentType: string;
+  name?: string;
+  last: boolean;
+  maxBytes?: number;
+}): Promise<{ uploadId: string; size: number; done: false } | { done: true; name: string; size: number; contentType: string }> {
+  const maxBytes = opts.maxBytes ?? MAX_UPLOAD_BYTES;
+  if (!isAllowedType(opts.contentType)) throw new Error("รองรับเฉพาะไฟล์ video/*, image/* และ audio/*");
+  if (opts.uploadId !== undefined && !UPLOAD_ID.test(opts.uploadId)) throw new Error("uploadId ไม่ถูกต้อง");
+  const dir = join(mediaDir(), PARTIAL_DIR);
+  await mkdir(dir, { recursive: true });
+  const uploadId = opts.uploadId ?? nanoid(16).replace(/[^A-Za-z0-9_-]/g, "x").padEnd(16, "x").slice(0, 16);
+  const partial = join(dir, uploadId);
+  if (opts.uploadId !== undefined) {
+    await stat(partial).catch(() => {
+      throw new Error("ไม่พบ uploadId นี้ (เริ่มใหม่โดยไม่ส่ง uploadId)");
+    });
+  }
+  const prev = opts.uploadId !== undefined ? (await stat(partial)).size : 0;
+  if (prev + opts.data.length > maxBytes) {
+    await unlink(partial).catch(() => {});
+    throw new UploadTooLargeError(`ไฟล์ใหญ่เกิน ${Math.floor(maxBytes / 1024 / 1024)} MB`);
+  }
+  await appendFile(partial, opts.data);
+  const size = prev + opts.data.length;
+  if (!opts.last) return { uploadId, size, done: false };
+  if (size === 0) {
+    await unlink(partial).catch(() => {});
+    throw new Error("ไฟล์ว่างเปล่า");
+  }
+  const name = `${nanoid(16)}${extensionFor(opts.contentType, opts.name)}`;
+  await rename(partial, join(mediaDir(), name));
+  return { done: true, name, size, contentType: opts.contentType };
 }
