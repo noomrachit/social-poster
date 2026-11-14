@@ -7,7 +7,8 @@ import { Router as makeRouter } from "express";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
-import { createDraft, createPost, getAnalytics, importYingad, listIntegrations, listPosts, publishStoredPost } from "./lib/services.js";
+import { createDraft, createPost, deletePost, getAnalytics, importYingad, listIntegrations, listPosts, publishStoredPost } from "./lib/services.js";
+import { pool } from "./db/pool.js";
 import { parseScheduledAt } from "./lib/schedule.js";
 import { PRIVACY_STATUSES } from "./providers/types.js";
 
@@ -154,6 +155,29 @@ export function buildMcpServer(): McpServer {
       annotations: { readOnlyHint: true },
     },
     async ({ limit }) => json(await listPosts(limit ?? 10))
+  );
+
+  server.registerTool(
+    "delete_draft",
+    {
+      title: "ลบฉบับร่าง",
+      description:
+        "ลบโพสต์ที่ยังไม่ได้โพสต์ออกจากแอป (เฉพาะสถานะ draft / scheduled / cancelled / failed) ย้อนกลับไม่ได้ " +
+        "ไม่ลบโพสต์ที่ขึ้นแพลตฟอร์มไปแล้ว และไม่ลบไฟล์วิดีโอ เรียกเฉพาะเมื่อผู้ใช้สั่งลบชัดเจน",
+      inputSchema: { postId: z.string().min(1).describe("id โพสต์จาก list_posts") },
+      annotations: { destructiveHint: true },
+    },
+    async ({ postId }) => {
+      const { rows } = await pool.query(`SELECT status FROM posts WHERE id = $1`, [postId]);
+      const status = rows[0]?.status as string | undefined;
+      if (!status) return failure("ไม่พบโพสต์ตาม id นี้");
+      if (!["draft", "scheduled", "cancelled", "failed"].includes(status)) {
+        return failure(`โพสต์นี้สถานะ ${status} ลบผ่านเครื่องมือนี้ไม่ได้ (ลบได้เฉพาะ draft / scheduled / cancelled / failed)`);
+      }
+      const out = await deletePost(postId);
+      if (!out.ok) return failure(out.reason === "not_found" ? "ไม่พบโพสต์ตาม id นี้" : "กำลังโพสต์อยู่ ลบไม่ได้");
+      return json({ deleted: out.deleted });
+    }
   );
 
   server.registerTool(
