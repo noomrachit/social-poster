@@ -8,6 +8,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
 import { createDraft, createPost, getAnalytics, importYingad, listIntegrations, listPosts, publishStoredPost } from "./lib/services.js";
+import { appendMediaChunk, UploadTooLargeError } from "./lib/media-store.js";
 import { parseScheduledAt } from "./lib/schedule.js";
 import { PRIVACY_STATUSES } from "./providers/types.js";
 
@@ -94,6 +95,36 @@ export function buildMcpServer(): McpServer {
       }
       const out = await createDraft({ ...rest, scheduledAt: when });
       return out ? json(out) : failure("ไม่มีบัญชีที่เชื่อมไว้ตรงกับที่ขอ (ลอง list_integrations)");
+    }
+  );
+
+  server.registerTool(
+    "upload_media_chunk",
+    {
+      title: "อัปโหลดคลิป/รูป (แบ่งก้อน)",
+      description:
+        "อัปโหลดไฟล์คลิป/รูป/เสียงขึ้นแอปทีละก้อน base64 (ก้อนละไม่เกิน ~400 KB ก่อนเข้ารหัส) " +
+        "ก้อนแรกไม่ต้องส่ง uploadId จะได้ uploadId กลับมา ก้อนถัดไปส่ง uploadId เดิม ก้อนสุดท้ายใส่ last=true จะได้ url " +
+        "เอาไปใส่ mediaUrls ของ create_draft/create_post บีบคลิปให้เล็ก (~2-4 MB) ก่อนอัปโหลด",
+      inputSchema: {
+        data: z.string().min(1).max(700_000).describe("ข้อมูลไฟล์ก้อนนี้เป็น base64"),
+        contentType: z.string().min(1).describe("เช่น video/mp4"),
+        uploadId: z.string().optional().describe("ก้อนแรกไม่ต้องใส่"),
+        name: z.string().optional().describe("ชื่อไฟล์เดิม (ใช้เดานามสกุล)"),
+        last: z.boolean().describe("true = ก้อนสุดท้าย"),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    },
+    async ({ data, contentType, uploadId, name, last }) => {
+      try {
+        const out = await appendMediaChunk({ uploadId, data: Buffer.from(data, "base64"), contentType: contentType.toLowerCase(), name, last });
+        if (!out.done) return json(out);
+        const base = process.env.APP_BASE_URL?.replace(/\/$/, "");
+        if (!base) return failure("ยังไม่ได้ตั้ง APP_BASE_URL บนเซิร์ฟเวอร์ จึงสร้าง url ไม่ได้");
+        return json({ url: `${base}/media/${out.name}`, size: out.size, contentType: out.contentType });
+      } catch (err) {
+        return failure(err instanceof UploadTooLargeError ? err.message : err instanceof Error ? err.message : String(err));
+      }
     }
   );
 
