@@ -9,6 +9,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { z } from "zod";
 import { createDraft, createPost, getAnalytics, importYingad, listIntegrations, listPosts, publishStoredPost } from "./lib/services.js";
 import { appendMediaChunk, UploadTooLargeError } from "./lib/media-store.js";
+import { assembleClip, getVideo, makeSpeech, startVideo } from "./lib/gemini.js";
 import { parseScheduledAt } from "./lib/schedule.js";
 import { PRIVACY_STATUSES } from "./providers/types.js";
 
@@ -126,6 +127,67 @@ export function buildMcpServer(): McpServer {
         return failure(err instanceof UploadTooLargeError ? err.message : err instanceof Error ? err.message : String(err));
       }
     }
+  );
+
+  const wrap = <T,>(fn: (a: T) => Promise<unknown>) => async (a: T) => {
+    try {
+      return json(await fn(a));
+    } catch (err) {
+      return failure(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  server.registerTool(
+    "gemini_start_video",
+    {
+      title: "เริ่มสร้างวิดีโอ 1 ฉากด้วย Gemini (Veo)",
+      description:
+        "สั่ง Veo สร้างวิดีโอแนวตั้ง 9:16 หนึ่งฉาก (4/6/8 วินาที มีเสียงบรรยากาศในตัว) มีค่าใช้จ่ายต่อวินาที เรียกเฉพาะตามใบสั่งงานที่อนุมัติแล้ว " +
+        "คืน operation ให้ไปเช็กด้วย gemini_get_video ห้ามใส่ตัวหนังสือ โลโก้ หน้าคนจริงในพรอมต์",
+      inputSchema: {
+        prompt: z.string().min(10).max(2000).describe("พรอมต์ภาพภาษาอังกฤษของฉากนี้"),
+        durationSeconds: z.union([z.literal(4), z.literal(6), z.literal(8)]).optional(),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    },
+    wrap(({ prompt, durationSeconds }: { prompt: string; durationSeconds?: 4 | 6 | 8 }) => startVideo(prompt, durationSeconds))
+  );
+
+  server.registerTool(
+    "gemini_get_video",
+    {
+      title: "เช็ก/รับวิดีโอจาก Gemini",
+      description: "เช็กสถานะ operation จาก gemini_start_video ถ้าเสร็จแล้วเก็บไฟล์เข้าแอปและคืน url (ยังไม่เสร็จ = done:false รอ ~30 วินาทีแล้วเรียกซ้ำ)",
+      inputSchema: { operation: z.string().min(5) },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    },
+    wrap(({ operation }: { operation: string }) => getVideo(operation))
+  );
+
+  server.registerTool(
+    "gemini_tts",
+    {
+      title: "สร้างเสียงพากย์ไทยด้วย Gemini",
+      description: "แปลงบทพากย์เป็นไฟล์เสียง wav เก็บเข้าแอปและคืน url",
+      inputSchema: {
+        text: z.string().min(1).max(1500).describe("บทพากย์ภาษาไทย"),
+        voice: z.string().min(2).max(30).default("Kore").describe("ชื่อเสียงสำเร็จรูป เช่น Kore, Puck, Charon"),
+        style: z.string().min(2).max(120).default("พูดช้า นุ่มนวล อบอุ่น").describe("คำกำกับน้ำเสียง"),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    },
+    wrap(({ text, voice, style }: { text: string; voice: string; style: string }) => makeSpeech(text, voice, style))
+  );
+
+  server.registerTool(
+    "assemble_clip",
+    {
+      title: "ต่อฉากเป็นคลิปเดียว",
+      description: "ต่อวิดีโอหลายฉาก (url จาก gemini_get_video) เป็นคลิป 9:16 เดียว และผสมเสียงพากย์ (url จาก gemini_tts) ถ้าใส่ มาให้ แล้วคืน url ไปใช้กับ create_post",
+      inputSchema: { videoUrls: z.array(z.string()).min(1).max(8), voiceUrl: z.string().optional() },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+    },
+    wrap(({ videoUrls, voiceUrl }: { videoUrls: string[]; voiceUrl?: string }) => assembleClip(videoUrls, voiceUrl))
   );
 
   server.registerTool(
