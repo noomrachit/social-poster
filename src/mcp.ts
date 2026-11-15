@@ -10,6 +10,7 @@ import { z } from "zod";
 import { createDraft, createPost, getAnalytics, importYingad, listIntegrations, listPosts, publishStoredPost } from "./lib/services.js";
 import { appendMediaChunk, UploadTooLargeError } from "./lib/media-store.js";
 import { assembleClip, makeSpeech } from "./lib/gemini.js";
+import { renderClip, searchStock } from "./lib/clip-render.js";
 import { parseScheduledAt } from "./lib/schedule.js";
 import { PRIVACY_STATUSES } from "./providers/types.js";
 
@@ -161,6 +162,45 @@ export function buildMcpServer(): McpServer {
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     },
     wrap(({ videoUrls, voiceUrl }: { videoUrls: string[]; voiceUrl?: string }) => assembleClip(videoUrls, voiceUrl))
+  );
+
+  server.registerTool(
+    "stock_video_search",
+    {
+      title: "ค้นวิดีโอสต็อกฟรีแนวตั้ง (Pexels)",
+      description:
+        "ค้นวิดีโอสต็อกแนวตั้งฟรีจาก Pexels ด้วยคำค้นภาษาอังกฤษ (เช่น 'rain on window', 'cup of tea steam') คืน id ไว้ใส่ render_clip " +
+        "เลือกเฉพาะที่ usable=true และไม่เห็นหน้าคนชัด ใช้ได้ฟรีโดยไม่ต้องใส่เครดิต",
+      inputSchema: { query: z.string().min(2).max(80), limit: z.number().int().min(1).max(15).optional() },
+      annotations: { readOnlyHint: true, openWorldHint: true },
+    },
+    wrap(({ query, limit }: { query: string; limit?: number }) => searchStock(query, limit))
+  );
+
+  server.registerTool(
+    "render_clip",
+    {
+      title: "สร้างคลิป 9:16 อัตโนมัติ",
+      description:
+        "ต่อฉาก 2–8 ฉาก (ฉากละ 3–8 วินาที รวม 15–30 วินาที) จากวิดีโอสต็อก pexelsId หรือไฟล์ในแอป mediaUrl ใส่ข้อความไทยบนจอ ผสมเสียงพากย์ (voiceUrl จาก gemini_tts) " +
+        "และดนตรีสังเคราะห์เบาๆ ได้ไฟล์ mp4 1080x1920 ไปใช้กับ create_draft/create_post ไม่คิดเงิน",
+      inputSchema: {
+        scenes: z
+          .array(
+            z.object({
+              pexelsId: z.number().int().optional(),
+              mediaUrl: z.string().optional(),
+              seconds: z.number().min(3).max(8),
+              text: z.string().max(80).optional().describe("ข้อความไทยบนจอฉากนี้"),
+            })
+          )
+          .min(2)
+          .max(8),
+        voiceUrl: z.string().optional(),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    },
+    wrap((a: { scenes: { pexelsId?: number; mediaUrl?: string; seconds: number; text?: string }[]; voiceUrl?: string }) => renderClip(a))
   );
 
   server.registerTool(
