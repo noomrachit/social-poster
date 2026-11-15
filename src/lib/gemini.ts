@@ -1,4 +1,4 @@
-// เรียก Gemini API (Veo สร้างวิดีโอ, TTS สร้างเสียงพากย์) และประกอบคลิปด้วย ffmpeg
+// เรียก Gemini API (TTS สร้างเสียงพากย์) และประกอบคลิปด้วย ffmpeg — ไม่มีการสร้างวิดีโอผ่าน API (คิดเงิน) ตั้งใจตัดออก
 // ต้องตั้ง GEMINI_API_KEY; ไม่ตั้ง = เครื่องมือจะแจ้งว่ายังใช้ไม่ได้ (ไม่พังทั้งแอป)
 import { spawn } from "node:child_process";
 import { mkdir, writeFile, unlink } from "node:fs/promises";
@@ -7,7 +7,6 @@ import { nanoid } from "nanoid";
 import { mediaDir, mediaPath, SAFE_NAME } from "./media-store.js";
 
 const BASE = "https://generativelanguage.googleapis.com/v1beta";
-export const VEO_MODEL = process.env.GEMINI_VIDEO_MODEL || "veo-3.1-generate-preview";
 export const TTS_MODEL = process.env.GEMINI_TTS_MODEL || "gemini-2.5-flash-preview-tts";
 
 function apiKey(): string {
@@ -34,40 +33,6 @@ function publicUrl(name: string): string {
   const base = process.env.APP_BASE_URL?.replace(/\/$/, "");
   if (!base) throw new Error("ยังไม่ได้ตั้ง APP_BASE_URL บนเซิร์ฟเวอร์");
   return `${base}/media/${name}`;
-}
-
-/** เริ่มสร้างวิดีโอ 1 ฉาก (Veo ได้ฉากละ 4/6/8 วินาที พร้อมเสียงในตัว) คืนชื่อ operation ไว้ไปเช็กทีหลัง */
-export async function startVideo(prompt: string, durationSeconds: 4 | 6 | 8 = 8): Promise<{ operation: string }> {
-  const res = await gfetch(`${BASE}/models/${VEO_MODEL}:predictLongRunning`, {
-    method: "POST",
-    body: JSON.stringify({ instances: [{ prompt }], parameters: { aspectRatio: "9:16", durationSeconds } }),
-  });
-  const data = (await res.json()) as { name?: string };
-  if (!data.name) throw new Error("Gemini ไม่คืนชื่อ operation");
-  return { operation: data.name };
-}
-
-export type VideoStatus = { done: false } | { done: true; url: string } | { done: true; error: string };
-
-export function pickVideoUri(op: any): { uri?: string; error?: string } {
-  if (op?.error) return { error: String(op.error.message ?? "สร้างวิดีโอไม่สำเร็จ") };
-  const r = op?.response?.generateVideoResponse;
-  const uri = r?.generatedSamples?.[0]?.video?.uri;
-  if (uri) return { uri };
-  const reason = r?.raiMediaFilteredReasons?.[0];
-  return { error: reason ? `ถูกตัวกรองความปลอดภัยปฏิเสธ: ${reason}` : "ไม่พบไฟล์วิดีโอในผลลัพธ์" };
-}
-
-/** เช็กสถานะ ถ้าเสร็จจะดาวน์โหลดเก็บเข้า media แล้วคืน url */
-export async function getVideo(operation: string): Promise<VideoStatus> {
-  if (!/^[A-Za-z0-9_\-\/]+$/.test(operation)) throw new Error("operation ไม่ถูกต้อง");
-  const op = await (await gfetch(`${BASE}/${operation}`)).json();
-  if (!op.done) return { done: false };
-  const picked = pickVideoUri(op);
-  if (!picked.uri) return { done: true, error: picked.error ?? "ไม่ทราบสาเหตุ" };
-  const file = await gfetch(picked.uri, { redirect: "follow" });
-  const name = await saveBuffer(Buffer.from(await file.arrayBuffer()), ".mp4");
-  return { done: true, url: publicUrl(name) };
 }
 
 /** ห่อ PCM 16-bit mono 24kHz เป็นไฟล์ WAV */
