@@ -1,3 +1,0 @@
-# ให้ Railway ติดตั้ง ffmpeg (ใช้ต่อฉากวิดีโอใน assemble_clip)
-[phases.setup]
-aptPkgs = ["ffmpeg"]
