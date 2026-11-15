@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 process.env.DATABASE_URL ??= "postgres://test:test@localhost:5432/test";
-const { pcmToWav, pickVideoUri, buildFfmpegArgs } = await import("../lib/gemini.js");
+const { pcmToWav, buildFfmpegArgs } = await import("../lib/gemini.js");
 
 test("pcmToWav ใส่หัว WAV ถูกต้อง", () => {
   const w = pcmToWav(Buffer.alloc(100));
@@ -9,12 +9,6 @@ test("pcmToWav ใส่หัว WAV ถูกต้อง", () => {
   assert.equal(w.toString("ascii", 0, 4), "RIFF");
   assert.equal(w.readUInt32LE(24), 24000);
   assert.equal(w.readUInt32LE(40), 100);
-});
-
-test("pickVideoUri อ่านผลสำเร็จ/ถูกกรอง/error", () => {
-  assert.equal(pickVideoUri({ response: { generateVideoResponse: { generatedSamples: [{ video: { uri: "u" } }] } } }).uri, "u");
-  assert.match(pickVideoUri({ response: { generateVideoResponse: { raiMediaFilteredReasons: ["x"] } } }).error!, /ปฏิเสธ/);
-  assert.equal(pickVideoUri({ error: { message: "boom" } }).error, "boom");
 });
 
 test("buildFfmpegArgs ต่อ 2 ฉากพร้อมเสียงพากย์", () => {

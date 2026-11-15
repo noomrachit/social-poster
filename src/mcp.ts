@@ -9,7 +9,7 @@ import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/
 import { z } from "zod";
 import { createDraft, createPost, getAnalytics, importYingad, listIntegrations, listPosts, publishStoredPost } from "./lib/services.js";
 import { appendMediaChunk, UploadTooLargeError } from "./lib/media-store.js";
-import { assembleClip, getVideo, makeSpeech, startVideo } from "./lib/gemini.js";
+import { assembleClip, makeSpeech } from "./lib/gemini.js";
 import { parseScheduledAt } from "./lib/schedule.js";
 import { PRIVACY_STATUSES } from "./providers/types.js";
 
@@ -136,33 +136,6 @@ export function buildMcpServer(): McpServer {
       return failure(err instanceof Error ? err.message : String(err));
     }
   };
-
-  server.registerTool(
-    "gemini_start_video",
-    {
-      title: "เริ่มสร้างวิดีโอ 1 ฉากด้วย Gemini (Veo)",
-      description:
-        "สั่ง Veo สร้างวิดีโอแนวตั้ง 9:16 หนึ่งฉาก (4/6/8 วินาที มีเสียงบรรยากาศในตัว) มีค่าใช้จ่ายต่อวินาที เรียกเฉพาะตามใบสั่งงานที่อนุมัติแล้ว " +
-        "คืน operation ให้ไปเช็กด้วย gemini_get_video ห้ามใส่ตัวหนังสือ โลโก้ หน้าคนจริงในพรอมต์",
-      inputSchema: {
-        prompt: z.string().min(10).max(2000).describe("พรอมต์ภาพภาษาอังกฤษของฉากนี้"),
-        durationSeconds: z.union([z.literal(4), z.literal(6), z.literal(8)]).optional(),
-      },
-      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
-    },
-    wrap(({ prompt, durationSeconds }: { prompt: string; durationSeconds?: 4 | 6 | 8 }) => startVideo(prompt, durationSeconds))
-  );
-
-  server.registerTool(
-    "gemini_get_video",
-    {
-      title: "เช็ก/รับวิดีโอจาก Gemini",
-      description: "เช็กสถานะ operation จาก gemini_start_video ถ้าเสร็จแล้วเก็บไฟล์เข้าแอปและคืน url (ยังไม่เสร็จ = done:false รอ ~30 วินาทีแล้วเรียกซ้ำ)",
-      inputSchema: { operation: z.string().min(5) },
-      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
-    },
-    wrap(({ operation }: { operation: string }) => getVideo(operation))
-  );
 
   server.registerTool(
     "gemini_tts",
