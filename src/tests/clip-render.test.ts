@@ -8,7 +8,7 @@ import { spawnSync } from "node:child_process";
 process.env.DATABASE_URL ??= "postgres://test:test@localhost:5432/test";
 process.env.MEDIA_DIR = mkdtempSync(join(tmpdir(), "clipr-"));
 process.env.APP_BASE_URL = "http://x";
-const { wrapThai, pickPexelsFile, buildFilter, renderClip } = await import("../lib/clip-render.js");
+const { wrapThai, pickPexelsFile, pickPixabayFile, buildFilter, renderClip } = await import("../lib/clip-render.js");
 const hasFfmpeg = spawnSync("ffmpeg", ["-version"]).status === 0;
 
 test("wrapThai ตัดบรรทัดตามคำ", () => {
@@ -40,7 +40,7 @@ test("buildFilter มีเสียงพากย์และไม่มี�
 test("renderClip ตรวจเงื่อนไขอินพุต", async () => {
   await assert.rejects(renderClip({ scenes: [{ mediaUrl: "x", seconds: 6 }] }), /2–8/);
   await assert.rejects(renderClip({ scenes: [{ mediaUrl: "x", seconds: 4 }, { mediaUrl: "x", seconds: 4 }] }), /15–30/);
-  await assert.rejects(renderClip({ scenes: [{ seconds: 8 }, { seconds: 8 }] }), /pexelsId หรือ mediaUrl/);
+  await assert.rejects(renderClip({ scenes: [{ seconds: 8 }, { seconds: 8 }] }), /pexelsId หรือ pixabayId หรือ mediaUrl/);
 });
 
 test("renderClip ทำงานจริงด้วย ffmpeg (ข้ามถ้าไม่มี)", { skip: !hasFfmpeg }, async () => {
@@ -66,4 +66,11 @@ test("renderClip ทำงานจริงด้วย ffmpeg (ข้ามถ
   assert.match(probe, /video,1080,1920/);
   assert.match(probe, /audio/);
   assert.deepEqual(r.warnings, []); // wav 20 วินาที สั้นกว่าคลิป 24 วินาที ไม่ต้องเตือน
+});
+
+test("pickPixabayFile เลือก medium ถ้ากว้าง >= 720 ไม่งั้น large", () => {
+  assert.equal(pickPixabayFile({ medium: { url: "m", width: 1280, height: 720 }, large: { url: "l", width: 1920, height: 1080 } })?.url, "m");
+  assert.equal(pickPixabayFile({ medium: { url: "m", width: 640, height: 360 }, large: { url: "l", width: 1920, height: 1080 } })?.url, "l");
+  assert.equal(pickPixabayFile({ medium: { url: "m", width: 640, height: 360 } }), null);
+  assert.equal(pickPixabayFile(undefined), null);
 });

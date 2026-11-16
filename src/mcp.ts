@@ -167,10 +167,10 @@ export function buildMcpServer(): McpServer {
   server.registerTool(
     "stock_video_search",
     {
-      title: "ค้นวิดีโอสต็อกฟรีแนวตั้ง (Pexels)",
+      title: "ค้นวิดีโอสต็อกฟรี (Pixabay/Pexels)",
       description:
-        "ค้นวิดีโอสต็อกแนวตั้งฟรีจาก Pexels ด้วยคำค้นภาษาอังกฤษ (เช่น 'rain on window', 'cup of tea steam') คืน id ไว้ใส่ render_clip " +
-        "เลือกเฉพาะที่ usable=true และไม่เห็นหน้าคนชัด ใช้ได้ฟรีโดยไม่ต้องใส่เครดิต",
+        "ค้นวิดีโอสต็อกฟรีจาก Pixabay (หรือ Pexels ถ้าไม่มีคีย์ Pixabay) ด้วยคำค้นภาษาอังกฤษ (เช่น 'rain on window', 'cup of tea steam') คืน source+id ไว้ใส่ render_clip (pixabayId หรือ pexelsId ตาม source) " +
+        "ภาพแนวนอนจะถูกครอปกลางเป็น 9:16 เลือกเฉพาะที่ usable=true และไม่เห็นหน้าคนชัด ใช้ได้ฟรีโดยไม่ต้องใส่เครดิต",
       inputSchema: { query: z.string().min(2).max(80), limit: z.number().int().min(1).max(15).optional() },
       annotations: { readOnlyHint: true, openWorldHint: true },
     },
@@ -182,13 +182,14 @@ export function buildMcpServer(): McpServer {
     {
       title: "สร้างคลิป 9:16 อัตโนมัติ",
       description:
-        "ต่อฉาก 2–8 ฉาก (ฉากละ 3–8 วินาที รวม 15–30 วินาที) จากวิดีโอสต็อก pexelsId หรือไฟล์ในแอป mediaUrl ใส่ข้อความไทยบนจอ ผสมเสียงพากย์ (voiceUrl จาก gemini_tts) " +
+        "ต่อฉาก 2–8 ฉาก (ฉากละ 3–8 วินาที รวม 15–30 วินาที) จากวิดีโอสต็อก pixabayId/pexelsId หรือไฟล์ในแอป mediaUrl ใส่ข้อความไทยบนจอ ผสมเสียงพากย์ (voiceUrl จาก gemini_tts) " +
         "และดนตรีสังเคราะห์เบาๆ ได้ไฟล์ mp4 1080x1920 ไปใช้กับ create_draft/create_post ไม่คิดเงิน",
       inputSchema: {
         scenes: z
           .array(
             z.object({
               pexelsId: z.number().int().optional(),
+              pixabayId: z.number().int().optional(),
               mediaUrl: z.string().optional(),
               seconds: z.number().min(3).max(8),
               text: z.string().max(80).optional().describe("ข้อความไทยบนจอฉากนี้"),
@@ -200,7 +201,7 @@ export function buildMcpServer(): McpServer {
       },
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
     },
-    wrap((a: { scenes: { pexelsId?: number; mediaUrl?: string; seconds: number; text?: string }[]; voiceUrl?: string }) => renderClip(a))
+    wrap((a: { scenes: { pexelsId?: number; pixabayId?: number; mediaUrl?: string; seconds: number; text?: string }[]; voiceUrl?: string }) => renderClip(a))
   );
 
   server.registerTool(
