@@ -1,5 +1,5 @@
-// สร้างคลิป 9:16 อัตโนมัติจากวิดีโอสต็อกฟรี (Pexels) หรือวิดีโอในแอป + ข้อความบนจอ + เสียงพากย์ + ดนตรีสังเคราะห์
-// ต้องมี ffmpeg และฟอนต์ไทย (fonts-thai-tlwg) บนเซิร์ฟเวอร์ และตั้ง PEXELS_API_KEY (ฟรี) ถ้าจะค้นหาวิดีโอสต็อก
+// สร้างคลิป 9:16 อัตโนมัติจากวิดีโอสต็อกฟรี (Pixabay/Pexels) หรือวิดีโอในแอป + ข้อความบนจอ + เสียงพากย์ + ดนตรีสังเคราะห์
+// ต้องมี ffmpeg และฟอนต์ไทย (fonts-thai-tlwg) บนเซิร์ฟเวอร์ และตั้ง PIXABAY_API_KEY หรือ PEXELS_API_KEY (ฟรี) ถ้าจะค้นหาวิดีโอสต็อก
 import { spawn } from "node:child_process";
 import { mkdir, mkdtemp, rm, writeFile, rename, stat } from "node:fs/promises";
 import { createWriteStream, existsSync } from "node:fs";
@@ -11,10 +11,11 @@ import { nanoid } from "nanoid";
 import { mediaDir, mediaPath, SAFE_NAME } from "./media-store.js";
 
 const PEXELS = "https://api.pexels.com/videos";
-const ALLOWED_HOSTS = [/(^|\.)pexels\.com$/];
+const PIXABAY = "https://pixabay.com/api/videos/";
+const ALLOWED_HOSTS = [/(^|\.)pexels\.com$/, /(^|\.)pixabay\.com$/];
 const MAX_DOWNLOAD = 120 * 1024 * 1024;
 
-export type SceneInput = { pexelsId?: number; mediaUrl?: string; seconds: number; text?: string };
+export type SceneInput = { pexelsId?: number; pixabayId?: number; mediaUrl?: string; seconds: number; text?: string };
 
 function pexelsKey(): string {
   const k = process.env.PEXELS_API_KEY;
@@ -31,12 +32,57 @@ export function pickPexelsFile(files: PexelsFile[]): PexelsFile | null {
   return ok.sort((a, b) => a.width - b.width)[0];
 }
 
+function pixabayKey(): string | undefined {
+  return process.env.PIXABAY_API_KEY || undefined;
+}
+
+export type PixabayVideo = { url: string; width: number; height: number };
+
+/** เลือกไฟล์ Pixabay: medium ถ้ากว้าง >= 720 ไม่งั้น large (ภาพแนวนอนจะถูกครอปกลางเป็น 9:16) */
+export function pickPixabayFile(videos: Record<string, PixabayVideo> | undefined): PixabayVideo | null {
+  if (!videos) return null;
+  for (const k of ["medium", "large"]) {
+    const f = videos[k];
+    if (f?.url && f.width >= 720) return f;
+  }
+  return null;
+}
+
+async function searchPixabay(query: string, limit: number) {
+  const url = `${PIXABAY}?key=${encodeURIComponent(pixabayKey()!)}&q=${encodeURIComponent(query)}&safesearch=true&per_page=${Math.min(Math.max(limit, 3), 20)}`;
+  const res = await fetch(url, { signal: AbortSignal.timeout(20_000) });
+  if (!res.ok) throw new Error(`Pixabay ${res.status}`);
+  const data: any = await res.json();
+  return (data.hits ?? []).slice(0, limit).map((v: any) => ({
+    source: "pixabay" as const,
+    id: v.id as number,
+    seconds: v.duration as number,
+    page: v.pageURL as string,
+    preview: v.picture_id ? `https://i.vimeocdn.com/video/${v.picture_id}_640x360.jpg` : "",
+    usable: pickPixabayFile(v.videos) !== null && v.duration >= 3,
+  }));
+}
+
+async function fetchPixabayVideo(id: number, dest: string): Promise<void> {
+  const key = pixabayKey();
+  if (!key) throw new Error("ยังไม่ได้ตั้ง PIXABAY_API_KEY บนเซิร์ฟเวอร์");
+  const res = await fetch(`${PIXABAY}?key=${encodeURIComponent(key)}&id=${id}`, { signal: AbortSignal.timeout(20_000) });
+  if (!res.ok) throw new Error(`ไม่พบวิดีโอ Pixabay ${id} (${res.status})`);
+  const data: any = await res.json();
+  const f = pickPixabayFile(data.hits?.[0]?.videos);
+  if (!f) throw new Error(`วิดีโอ Pixabay ${id} ไม่มีไฟล์ที่ใช้ได้`);
+  await download(f.url, dest);
+}
+
+/** ค้นวิดีโอสต็อก: ใช้ Pixabay ถ้าตั้ง PIXABAY_API_KEY ไม่งั้นใช้ Pexels */
 export async function searchStock(query: string, limit = 6) {
+  if (pixabayKey()) return searchPixabay(query, limit);
   const url = `${PEXELS}/search?query=${encodeURIComponent(query)}&orientation=portrait&size=medium&per_page=${Math.min(Math.max(limit, 1), 15)}`;
   const res = await fetch(url, { headers: { Authorization: pexelsKey() }, signal: AbortSignal.timeout(20_000) });
   if (!res.ok) throw new Error(`Pexels ${res.status}`);
   const data: any = await res.json();
   return (data.videos ?? []).map((v: any) => ({
+    source: "pexels" as const,
     id: v.id as number,
     seconds: v.duration as number,
     page: v.url as string,
@@ -47,13 +93,13 @@ export async function searchStock(query: string, limit = 6) {
 
 async function download(link: string, dest: string): Promise<void> {
   const u = new URL(link);
-  if (u.protocol !== "https:" || !ALLOWED_HOSTS.some((r) => r.test(u.hostname))) throw new Error("ดาวน์โหลดได้เฉพาะจาก pexels.com");
+  if (u.protocol !== "https:" || !ALLOWED_HOSTS.some((r) => r.test(u.hostname))) throw new Error("ดาวน์โหลดได้เฉพาะจาก pexels.com หรือ pixabay.com");
   const res = await fetch(link, { redirect: "follow", signal: AbortSignal.timeout(60_000) });
   if (!res.ok || !res.body) throw new Error(`ดาวน์โหลดไม่สำเร็จ (${res.status})`);
   const final = new URL(res.url || link);
   if (final.protocol !== "https:" || !ALLOWED_HOSTS.some((r) => r.test(final.hostname))) {
     await res.body.cancel();
-    throw new Error("ลิงก์ถูกเปลี่ยนเส้นทางไปนอก pexels.com");
+    throw new Error("ลิงก์ถูกเปลี่ยนเส้นทางไปนอกแหล่งที่อนุญาต");
   }
   if (Number(res.headers.get("content-length") ?? 0) > MAX_DOWNLOAD) {
     await res.body.cancel();
@@ -164,7 +210,7 @@ async function renderClipUnlocked(input: { scenes: SceneInput[]; voiceUrl?: stri
   if (total < 15 || total > 30) throw new Error(`ความยาวรวม ${total} วินาที ต้องอยู่ระหว่าง 15–30`);
   for (const s of scenes) {
     if (!(s.seconds >= 3 && s.seconds <= 8)) throw new Error("ฉากละ 3–8 วินาที");
-    if (!!s.pexelsId === !!s.mediaUrl) throw new Error("แต่ละฉากต้องระบุ pexelsId หรือ mediaUrl อย่างใดอย่างหนึ่ง");
+    if ([s.pexelsId, s.pixabayId, s.mediaUrl].filter(Boolean).length !== 1) throw new Error("แต่ละฉากต้องระบุ pexelsId หรือ pixabayId หรือ mediaUrl อย่างใดอย่างหนึ่ง");
   }
   const base = process.env.APP_BASE_URL?.replace(/\/$/, "");
   if (!base) throw new Error("ยังไม่ได้ตั้ง APP_BASE_URL บนเซิร์ฟเวอร์");
@@ -184,7 +230,8 @@ async function renderClipUnlocked(input: { scenes: SceneInput[]; voiceUrl?: stri
         files.push(p);
       } else {
         const dest = join(dir, `s${i}.mp4`);
-        await fetchPexelsVideo(s.pexelsId!, dest);
+        if (s.pixabayId) await fetchPixabayVideo(s.pixabayId, dest);
+        else await fetchPexelsVideo(s.pexelsId!, dest);
         files.push(dest);
       }
       if (s.text && font) {
