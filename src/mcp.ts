@@ -11,6 +11,7 @@ import { createDraft, createPost, getAnalytics, importYingad, listIntegrations, 
 import { appendMediaChunk, UploadTooLargeError } from "./lib/media-store.js";
 import { assembleClip, makeSpeech } from "./lib/gemini.js";
 import { renderClip, searchStock } from "./lib/clip-render.js";
+import { importGrokVideo, listGrokVideos } from "./lib/github-media.js";
 import { parseScheduledAt } from "./lib/schedule.js";
 import { PRIVACY_STATUSES } from "./providers/types.js";
 
@@ -162,6 +163,34 @@ export function buildMcpServer(): McpServer {
       annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
     },
     wrap(({ videoUrls, voiceUrl }: { videoUrls: string[]; voiceUrl?: string }) => assembleClip(videoUrls, voiceUrl))
+  );
+
+  server.registerTool(
+    "list_grok_videos",
+    {
+      title: "รายการคลิปที่ Grok ส่งออกลงรีโป",
+      description: "ดูรายชื่อไฟล์ .mp4 ในรีโป GitHub ที่ Grok ส่งออก (artifacts/imagine_videos) ก่อนนำเข้า",
+      inputSchema: {},
+      annotations: { readOnlyHint: true, openWorldHint: true },
+    },
+    wrap(() => listGrokVideos())
+  );
+
+  server.registerTool(
+    "import_grok_video",
+    {
+      title: "นำเข้าคลิปจาก Grok เข้าแอป",
+      description:
+        "ดึงคลิป .mp4 จากรีโป Grok (ชื่อไฟล์ เช่น KFPkY.mp4) เข้าที่เก็บสื่อของแอป คืน url ไปใส่ mediaUrl ของ render_clip ได้ ไม่คิดเงิน",
+      inputSchema: { file: z.string().min(3).max(120) },
+      annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: true },
+    },
+    wrap(async ({ file }: { file: string }) => {
+      const out = await importGrokVideo(file);
+      const base = process.env.APP_BASE_URL?.replace(/\/$/, "");
+      if (!base) throw new Error("ยังไม่ได้ตั้ง APP_BASE_URL บนเซิร์ฟเวอร์");
+      return { url: `${base}/media/${out.name}`, size: out.size };
+    })
   );
 
   server.registerTool(
